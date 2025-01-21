@@ -1,126 +1,148 @@
--- passenger Management
-CREATE OR REPLACE PACKAGE Passenger_Management AS
-    PROCEDURE Add_Passenger(p_Passenger IN Passenger);
-    FUNCTION Is_Passenger_Exists(p_Passport_number VARCHAR2) RETURN BOOLEAN;
-END Passenger_Management;
+   SET SERVEROUTPUT ON;
+
+
+create or replace package flight_management as
+   procedure show_plane_seats_distribution (
+      plane_id number
+   );
+   procedure take_seat_at_plane (
+      reservation_list in sys.odcinumberlist, -- List of Reservation IDs
+      seat_list        in sys.odcinumberlist         -- List of Seat IDs
+   );
+end flight_management;
 /
 
-CREATE OR REPLACE PACKAGE BODY Passenger_Management AS
-    FUNCTION Is_Passenger_Exists(p_Passport_number VARCHAR2) RETURN BOOLEAN IS
-        v_Count NUMBER;
-    BEGIN
-        SELECT COUNT(*) INTO v_Count
-        FROM Passengers
-        WHERE Passport_number = p_Passport_number;
-        
-        RETURN v_Count > 0;
-    END;
+create or replace package body flight_management as
+   procedure show_plane_seats_distribution (
+      plane_id number
+   ) is
+      plane_obj    plane; -- Variable to hold the Plane object
+      seat_refs    planeseatlist; -- Nested table of REF PlaneSeat
+      seat_ref     ref planeseat; -- REF variable for PlaneSeat
+      seat         planeseat; -- Variable to hold the dereferenced PlaneSeat
+      current_row  int := -1; -- Keeps track of the current row
+      seat_display varchar2(500); -- To build the seat display for a row
+   begin
+        -- Retrieve the Plane object by ID
+      select value(p)
+        into plane_obj
+        from plane_table p
+       where p.id = plane_id;
 
-    PROCEDURE Add_Passenger(p_Passenger IN Passenger) IS
-    BEGIN
-        IF Is_Passenger_Exists(p_Passenger.Passport_number) THEN
-            RAISE_APPLICATION_ERROR(-20001, 'Passenger already exists with this passport number');
-        END IF;
+        -- Assign the nested table of seat references
+      seat_refs := plane_obj.seat_list;
 
-        INSERT INTO Passengers VALUES p_Passenger;
-        COMMIT;
-    END;
-END Passenger_Management;
+        -- Loop through the nested table
+      if seat_refs is not null then
+         for i in 1..seat_refs.count loop
+            seat_ref := seat_refs(i);
+
+                -- Dereference the seat
+            select deref(seat_ref)
+              into seat
+              from dual;
+
+                -- Check if we are on a new row
+            if seat.seatrow != current_row then
+                    -- Print the previous row (if exists) and reset for the new row
+               if current_row != -1 then
+                  dbms_output.put_line(seat_display);
+               end if;
+
+                    -- Start a new row
+               current_row := seat.seatrow;
+               seat_display := '';
+            end if;
+
+                -- Append the seat (e.g., 1A) to the current row display
+            seat_display := seat_display
+                            || seat.seatrow
+                            || chr(64 + seat.seatcolumn)
+                            || ' ';
+         end loop;
+
+            -- Print the final row
+         if current_row != -1 then
+            dbms_output.put_line(seat_display);
+         end if;
+      else
+         dbms_output.put_line('No seats found for Plane ID ' || plane_id);
+      end if;
+   exception
+      when no_data_found then
+         dbms_output.put_line('No plane found with ID ' || plane_id);
+      when others then
+         dbms_output.put_line('An error occurred: ' || sqlerrm);
+   end show_plane_seats_distribution;
+
+   procedure take_seat_at_plane (
+      reservation_list in sys.odcinumberlist,
+      seat_list        in sys.odcinumberlist
+   ) is
+      reservation_obj reservation; -- Variable to hold the reservation
+      current_seat    ref planeseat; -- Current seat reference of the reservation
+      new_seat        ref planeseat; -- New seat reference to be assigned
+   begin
+        -- Iterate over reservations and seats
+      for i in 1..reservation_list.count loop
+            -- Fetch the reservation object
+         select value(r)
+           into reservation_obj
+           from reservation_table r
+          where r.id = reservation_list(i);
+
+            -- Check if the reservation already has a seat
+         if reservation_obj.seat is not null then
+                -- Release the current seat
+            reservation_obj.seat := null;
+
+                -- Update the reservation table
+            update reservation_table r
+               set
+               r.seat = null
+             where r.id = reservation_list(i);
+         end if;
+
+            -- Assign the new seat
+         select ref(s)
+           into new_seat
+           from planeseat_table s
+          where s.seatrow = seat_list(i); -- Assuming seat_list contains row identifiers
+
+         reservation_obj.seat := new_seat;
+
+            -- Update the reservation table with the new seat
+         update reservation_table r
+            set
+            r.seat = new_seat
+          where r.id = reservation_list(i);
+      end loop;
+   exception
+      when no_data_found then
+         dbms_output.put_line('Reservation or seat not found.');
+      when others then
+         dbms_output.put_line('An error occurred: ' || sqlerrm);
+   end take_seat_at_plane;
+end flight_management;
 /
 
--- flight Management
-CREATE OR REPLACE PACKAGE Flight_Management AS
-    PROCEDURE Add_Flight(p_Flight IN Flight);
-    FUNCTION Is_Flight_Exists(p_Id NUMBER, p_Date TIMESTAMP) RETURN BOOLEAN;
-END Flight_Management;
+
+
+begin
+   flight_management.show_plane_seats_distribution(plane_id => 2);
+end;
 /
 
-CREATE OR REPLACE PACKAGE BODY Flight_Management AS
-    FUNCTION Is_Flight_Exists(p_Id NUMBER, p_Date TIMESTAMP) RETURN BOOLEAN IS
-        v_Count NUMBER;
-    BEGIN
-        SELECT COUNT(*) INTO v_Count
-        FROM Flights
-        WHERE Id = p_Id AND TRUNC(Departure_datetime) = TRUNC(p_Date);
-        
-        RETURN v_Count > 0;
-    END;
-
-    PROCEDURE Add_Flight(p_Flight IN Flight) IS
-    BEGIN
-        IF Is_Flight_Exists(p_Flight.Id, p_Flight.Departure_datetime) THEN
-            RAISE_APPLICATION_ERROR(-20002, 'Flight already exists for this date');
-        END IF;
-
-        INSERT INTO Flights VALUES p_Flight;
-        COMMIT;
-    END;
-END Flight_Management;
+begin
+   flight_management.take_seat_at_plane(
+      reservation_list => sys.odcinumberlist(
+         1,
+         2
+      ),
+      seat_list        => sys.odcinumberlist(
+         101,
+         102
+      ) -- Assuming seat IDs
+   );
+end;
 /
-
--- reservation Management
-CREATE OR REPLACE PACKAGE Reservation_Management AS
-    PROCEDURE Add_Reservation(p_Reservation IN Reservation);
-    FUNCTION Is_Seat_Taken(p_Flight_id REF Flight, p_Seat_id REF Seat) RETURN BOOLEAN;
-    FUNCTION Is_Reservation_Time_Valid(p_Flight_id REF Flight) RETURN BOOLEAN;
-END Reservation_Management;
-/
-
-CREATE OR REPLACE PACKAGE BODY Reservation_Management AS
-    FUNCTION Is_Seat_Taken(p_Flight_id REF Flight, p_Seat_id REF Seat) RETURN BOOLEAN IS
-        v_Count NUMBER;
-    BEGIN
-        SELECT COUNT(*) INTO v_Count
-        FROM Reservations
-        WHERE Flight_id = p_Flight_id AND Seat_id = p_Seat_id;
-
-        RETURN v_Count > 0;
-    END;
-
-    FUNCTION Is_Reservation_Time_Valid(p_Flight_id REF Flight) RETURN BOOLEAN IS
-        v_Departure TIMESTAMP;
-    BEGIN
-        SELECT f.Departure_datetime
-        INTO v_Departure
-        FROM Flights f
-        WHERE REF(f) = p_Flight_id;
-    
-        RETURN SYSTIMESTAMP < v_Departure - INTERVAL '2' HOUR;
-    END;
-
-    PROCEDURE Add_Reservation(p_Reservation IN Reservation) IS
-    BEGIN
-        IF Is_Seat_Taken(p_Reservation.Flight_id, p_Reservation.Seat_id) THEN
-            RAISE_APPLICATION_ERROR(-20003, 'This seat is already taken for the flight');
-        END IF;
-
-        IF NOT Is_Reservation_Time_Valid(p_Reservation.Flight_id) THEN
-            RAISE_APPLICATION_ERROR(-20004, 'Reservations must be made at least 2 hours before departure');
-        END IF;
-
-        INSERT INTO Reservations VALUES p_Reservation;
-        COMMIT;
-    END;
-END Reservation_Management;
-/
-
--- crew Managemen
-CREATE OR REPLACE PACKAGE Crew_Management AS
-    FUNCTION Is_Crew_Qualified(p_Crew_id REF Crew_Member, p_Plane_id REF Plane) RETURN BOOLEAN;
-END Crew_Management;
-/
-
-CREATE OR REPLACE PACKAGE BODY Crew_Management AS
-    FUNCTION Is_Crew_Qualified(p_Crew_id REF Crew_Member, p_Plane_id REF Plane) RETURN BOOLEAN IS
-        v_Count NUMBER;
-    BEGIN
-        SELECT COUNT(*) INTO v_Count
-        FROM Crew_Members c, TABLE(c.Roles_list) r
-        WHERE REF(c) = p_Crew_id;
-
-        -- logika sprawdzania kwalifikacji :p
-        RETURN v_Count > 0;
-    END;
-END Crew_Management;
-/
-

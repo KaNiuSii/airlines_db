@@ -1,15 +1,60 @@
--- czyszczenie
+-- Usuwanie istniejï¿½cych obiektï¿½w
 BEGIN
-  FOR cur_rec IN (SELECT object_name, object_type 
-                  FROM   user_objects
-                  WHERE  object_type IN ('TABLE', 'VIEW', 'PACKAGE', 'PROCEDURE', 'FUNCTION', 'SEQUENCE', 'TRIGGER', 'TYPE')) LOOP
+  -- First, drop all parent tables
+  FOR cur_rec IN (
+    SELECT table_name AS object_name, 'TABLE' AS object_type 
+    FROM user_tables
+    WHERE table_name NOT LIKE '%LIST_TABLE'
+  ) LOOP
+    BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE "' || cur_rec.object_name || '" CASCADE CONSTRAINTS';
+    EXCEPTION
+      WHEN OTHERS THEN
+        DBMS_OUTPUT.put_line('FAILED: DROP TABLE "' || cur_rec.object_name || '"');
+    END;
+  END LOOP;
+
+  -- Next, drop remaining tables (nested tables)
+  FOR cur_rec IN (
+    SELECT table_name AS object_name, 'TABLE' AS object_type 
+    FROM user_tables
+    WHERE table_name LIKE '%LIST_TABLE'
+  ) LOOP
+    BEGIN
+      EXECUTE IMMEDIATE 'DROP TABLE "' || cur_rec.object_name || '"';
+    EXCEPTION
+      WHEN OTHERS THEN
+        DBMS_OUTPUT.put_line('FAILED: DROP TABLE "' || cur_rec.object_name || '"');
+    END;
+  END LOOP;
+
+  -- Finally, drop all types
+  FOR cur_rec IN (
+    SELECT type_name AS object_name, 'TYPE' AS object_type 
+    FROM user_types
+  ) LOOP
+    BEGIN
+      EXECUTE IMMEDIATE 'DROP TYPE "' || cur_rec.object_name || '" FORCE';
+    EXCEPTION
+      WHEN OTHERS THEN
+        DBMS_OUTPUT.put_line('FAILED: DROP TYPE "' || cur_rec.object_name || '"');
+    END;
+  END LOOP;
+END;
+/
+BEGIN
+  FOR cur_rec IN (
+    SELECT object_name, object_type 
+    FROM user_objects
+    WHERE object_type IN (
+      'TABLE','VIEW','PACKAGE','PROCEDURE','FUNCTION','SEQUENCE','TRIGGER','TYPE'
+    )
+  ) LOOP
     BEGIN
       IF cur_rec.object_type = 'TABLE' THEN
-        IF instr(cur_rec.object_name, 'STORE') = 0 then
-          EXECUTE IMMEDIATE 'DROP ' || cur_rec.object_type || ' "' || cur_rec.object_name || '" CASCADE CONSTRAINTS';
-        END IF;
+        EXECUTE IMMEDIATE 'DROP TABLE "' || cur_rec.object_name || '" CASCADE CONSTRAINTS';
       ELSIF cur_rec.object_type = 'TYPE' THEN
-        EXECUTE IMMEDIATE 'DROP ' || cur_rec.object_type || ' "' || cur_rec.object_name || '" FORCE';
+        EXECUTE IMMEDIATE 'DROP TYPE "' || cur_rec.object_name || '" FORCE';
       ELSE
         EXECUTE IMMEDIATE 'DROP ' || cur_rec.object_type || ' "' || cur_rec.object_name || '"';
       END IF;
@@ -19,172 +64,257 @@ BEGIN
     END;
   END LOOP;
 END;
-
--- typy
-CREATE OR REPLACE TYPE Seat AS OBJECT (
-    Row_num NUMBER,
-    Column_num VARCHAR2(5),
-    Class VARCHAR2(20),
-    Name VARCHAR2(50),
-    Price NUMBER,
-    CONSTRUCTOR FUNCTION Seat (Row_num NUMBER, Column_num VARCHAR2, Class VARCHAR2, Price NUMBER) RETURN SELF AS RESULT
+/
+--------------------------------------------------------------------------------
+-- Typ dla klasy podrï¿½y
+--------------------------------------------------------------------------------
+CREATE OR REPLACE TYPE TravelClass AS OBJECT (
+    Id            INT,
+    Class_Name    VARCHAR2(100),
+    Description   VARCHAR2(255)
 );
 /
 
-CREATE OR REPLACE TYPE BODY Seat AS 
-    CONSTRUCTOR FUNCTION Seat (Row_num NUMBER, Column_num VARCHAR2, Class VARCHAR2, Price NUMBER) RETURN SELF AS RESULT IS
-    BEGIN
-        SELF.Row_num := Row_num;
-        SELF.Column_num := Column_num;
-        SELF.Class := Class;
-        SELF.Name := Row_num || ' ' || Column_num || ' ' || Class;
-        SELF.Price := Price;
-        RETURN;
-    END;
-END;
+CREATE TABLE TravelClass_Table OF TravelClass;
 /
 
-CREATE OR REPLACE TYPE Crew_Role AS OBJECT (
-    Id NUMBER,
-    Role_name VARCHAR2(50)
+ALTER TABLE TravelClass_Table 
+  ADD CONSTRAINT PK_TravelClass 
+  PRIMARY KEY (Id);
+/
+--------------------------------------------------------------------------------
+-- Typ dla roli
+--------------------------------------------------------------------------------
+CREATE OR REPLACE TYPE Role AS OBJECT (
+    Id         INT,
+    Role_name  VARCHAR2(100)
 );
 /
 
-CREATE OR REPLACE TYPE Crew_Role_VARRAY AS VARRAY(10) OF Crew_Role;
+CREATE TABLE Role_Table OF Role;
 /
 
-CREATE OR REPLACE TYPE Seat_TABLE AS TABLE OF Seat;
+ALTER TABLE Role_Table 
+  ADD CONSTRAINT PK_Role 
+  PRIMARY KEY (Id);
+/
+--------------------------------------------------------------------------------
+-- Typ dla miejsca w samolocie
+--------------------------------------------------------------------------------
+-- Zmieniamy nazwy atrybutï¿½w:
+--   Row   -> SeatRow
+--   Column -> SeatColumn
+--   Class -> TravelClassRef
+CREATE OR REPLACE TYPE PlaneSeat AS OBJECT (
+    Id              INT,
+    SeatRow         INT,
+    SeatColumn      INT,
+    TravelClassRef  REF TravelClass,
+    Price           FLOAT
+);
 /
 
+CREATE TABLE PlaneSeat_Table OF PlaneSeat;
+/
+
+ALTER TABLE PlaneSeat_Table 
+  ADD CONSTRAINT PK_PlaneSeat 
+  PRIMARY KEY (SeatRow, SeatColumn);
+/
+--------------------------------------------------------------------------------
+-- Typ kolekcji dla miejsc w samolocie
+--------------------------------------------------------------------------------
+CREATE OR REPLACE TYPE PlaneSeatList AS TABLE OF REF PlaneSeat;
+/
+--------------------------------------------------------------------------------
+-- Typ kolekcji dla rï¿½l
+--------------------------------------------------------------------------------
+CREATE OR REPLACE TYPE RoleList AS TABLE OF REF Role;
+/
+--------------------------------------------------------------------------------
+-- Typ dla przypisania roli do czï¿½onka zaï¿½ogi
+--------------------------------------------------------------------------------
+CREATE OR REPLACE TYPE RoleToCrew AS OBJECT (
+    Crew_member_id  INT,
+    Role_id         INT
+);
+/
+
+CREATE TABLE RoleToCrew_Table OF RoleToCrew;
+/
+
+ALTER TABLE RoleToCrew_Table 
+  ADD CONSTRAINT PK_RoleToCrew 
+  PRIMARY KEY (Crew_member_id, Role_id);
+/
+--------------------------------------------------------------------------------
+-- Typ dla samolotu
+--------------------------------------------------------------------------------
 CREATE OR REPLACE TYPE Plane AS OBJECT (
-    Id NUMBER,
-    Seat_list Seat_TABLE,
-    required_role_list Crew_Role_VARRAY
+    Id                   INT,
+    Seat_list            PlaneSeatList,
+    Required_role_list   RoleList
 );
 /
 
-CREATE OR REPLACE TYPE Passenger AS OBJECT (
-    Id NUMBER,
-    First_name VARCHAR2(50),
-    Last_name VARCHAR2(50),
-    Date_of_birth DATE,
-    Email VARCHAR2(100),
-    Phone VARCHAR2(20),
-    Passport_number VARCHAR2(50)
+CREATE TABLE Plane_Table OF Plane
+    NESTED TABLE Seat_list STORE AS Plane_Seat_List_Table,
+    NESTED TABLE Required_role_list STORE AS Plane_Role_List_Table;
+/
+
+ALTER TABLE Plane_Table 
+  ADD CONSTRAINT PK_Plane 
+  PRIMARY KEY (Id);
+/
+--------------------------------------------------------------------------------
+-- Typ dla czï¿½onka zaï¿½ogi
+--------------------------------------------------------------------------------
+CREATE OR REPLACE TYPE CrewMember AS OBJECT (
+    Id                   INT,
+    First_name           VARCHAR2(100),
+    Last_name            VARCHAR2(100),
+    Date_of_birth        DATE,
+    Email                VARCHAR2(150),
+    Phone                VARCHAR2(15),
+    Passport_number      VARCHAR2(20),
+    Roles_list           RoleList,
+    Number_of_hours_in_air FLOAT
 );
 /
 
-CREATE OR REPLACE TYPE Crew_Member AS OBJECT (
-    Id NUMBER,
-    First_name VARCHAR2(50),
-    Last_name VARCHAR2(50),
-    Date_of_birth DATE,
-    Email VARCHAR2(100),
-    Phone VARCHAR2(20),
-    Passport_number VARCHAR2(50),
-    Roles_list Crew_Role_VARRAY,
-    Number_of_hours_in_air NUMBER
+CREATE TABLE CrewMember_Table OF CrewMember
+    NESTED TABLE Roles_list STORE AS Crew_Role_List_Table;
+/
+
+ALTER TABLE CrewMember_Table 
+  ADD CONSTRAINT PK_CrewMember 
+  PRIMARY KEY (Id);
+/
+--------------------------------------------------------------------------------
+-- Typ dla dostï¿½pnoï¿½ci czï¿½onka zaï¿½ogi
+--------------------------------------------------------------------------------
+CREATE OR REPLACE TYPE CrewMemberAvailability AS OBJECT (
+    Id             INT,
+    Crew_member_id INT,
+    Flight_id      INT,
+    End_of_break   TIMESTAMP
 );
 /
 
-CREATE OR REPLACE TYPE Role_to_Crew AS OBJECT (
-    This_crew_member REF Crew_Member,
-    Role_of_this_member REF Crew_Role
-);
+CREATE TABLE CrewMemberAvailability_Table OF CrewMemberAvailability;
 /
 
-CREATE OR REPLACE TYPE Role_to_Crew_TABLE AS TABLE OF Role_to_Crew;
+ALTER TABLE CrewMemberAvailability_Table 
+  ADD CONSTRAINT PK_CrewMemberAvailability 
+  PRIMARY KEY (Id);
 /
-
-CREATE OR REPLACE TYPE Seat_REF_TABLE AS TABLE OF REF Seat;
-/
-
-CREATE OR REPLACE TYPE Flight AS OBJECT (
-    Id NUMBER,
-    Plane_id REF Plane,
-    Departure_datetime TIMESTAMP,
-    Arrival_datetime TIMESTAMP,
-    IATA_from VARCHAR2(3),
-    IATA_to VARCHAR2(3),
-    Role_to_crew_list Role_to_Crew_TABLE,
-    Reservation_closing_datetime TIMESTAMP,
-    List_taken_seats Seat_REF_TABLE
-);
-/
-
+--------------------------------------------------------------------------------
+-- Typ dla rezerwacji
+--------------------------------------------------------------------------------
 CREATE OR REPLACE TYPE Reservation AS OBJECT (
-    Id NUMBER,
-    Flight_id REF Flight,
-    Passenger_id REF Passenger,
-    Seat_id REF Seat
+    Id              INT,
+    Flight_id       INT,
+    Passenger_id    INT,
+    Requested_Class REF TravelClass,
+    Seat            REF PlaneSeat
 );
 /
 
--- Tabele obiektowych
-CREATE TABLE Seats OF Seat;
-CREATE TABLE Planes OF Plane NESTED TABLE Seat_list STORE AS Plane_Seats;
-CREATE TABLE Passengers OF Passenger;
-CREATE TABLE Crew_Roles OF Crew_Role;
-CREATE TABLE Crew_Members OF Crew_Member;
-CREATE TABLE Flights OF Flight NESTED TABLE Role_to_crew_list STORE AS Flight_Role_Crew,
-                                NESTED TABLE List_taken_seats STORE AS Flight_Seats;
-CREATE TABLE Reservations OF Reservation;
-
--- Dodaj referencje
-ALTER TABLE Reservations ADD CONSTRAINT fk_flight_id FOREIGN KEY (Flight_id) REFERENCES Flights;
-ALTER TABLE Reservations ADD CONSTRAINT fk_passenger_id FOREIGN KEY (Passenger_id) REFERENCES Passengers;
-ALTER TABLE Reservations ADD CONSTRAINT fk_seat_id FOREIGN KEY (Seat_id) REFERENCES Seats;
-
--- test package
-CREATE OR REPLACE PACKAGE Airline_Management AS
-    PROCEDURE Add_Flight(p_Flight IN Flight);
-    PROCEDURE Add_Reservation(p_Reservation IN Reservation);
-    FUNCTION Get_Seat_Info(p_Seat_Id IN NUMBER) RETURN VARCHAR2;
-END Airline_Management;
+CREATE TABLE Reservation_Table OF Reservation;
 /
 
-CREATE OR REPLACE PACKAGE BODY Airline_Management AS
-    PROCEDURE Add_Flight(p_Flight IN Flight) IS
-    BEGIN
-        INSERT INTO Flights VALUES p_Flight;
-    END;
-
-    PROCEDURE Add_Reservation(p_Reservation IN Reservation) IS
-    BEGIN
-        INSERT INTO Reservations VALUES p_Reservation;
-    END;
-
-    FUNCTION Get_Seat_Info(p_Seat_Id IN NUMBER) RETURN VARCHAR2 IS
-        v_Seat Seat;
-    BEGIN
-        SELECT VALUE(s)
-        INTO v_Seat
-        FROM Seats s
-        WHERE s.Row_num = p_Seat_Id;
-        RETURN v_Seat.Name || ' - Price: ' || v_Seat.Price;
-    END;
-END Airline_Management;
+ALTER TABLE Reservation_Table 
+  ADD CONSTRAINT PK_Reservation 
+  PRIMARY KEY (Id);
+/
+--------------------------------------------------------------------------------
+-- Typ dla lotu
+--------------------------------------------------------------------------------
+CREATE OR REPLACE TYPE Flight AS OBJECT (
+    Id                       INT,
+    Plane_id                 INT,
+    Departure_datetime       TIMESTAMP,
+    Arrival_datetime         TIMESTAMP,
+    IATA_from                CHAR(3),
+    IATA_to                  CHAR(3),
+    Reservation_closing_datetime TIMESTAMP,
+    List_taken_seats         PlaneSeatList,
+    Role_to_crew_list        RoleList
+);
 /
 
--- Inserty
-DECLARE
-    v_Seat Seat;
-    v_Passenger Passenger;
-BEGIN
-    -- Insert fotela
-    v_Seat := Seat(10, 'A', 'Business', 500);
-    INSERT INTO Seats VALUES (v_Seat);
-
-    -- Insert pasa¿er
-    v_Passenger := Passenger(1, 'Jan', 'Kowalski', TO_DATE('1990-05-05', 'YYYY-MM-DD'), 'jan.kowalski@example.com', '123456789', 'AB123456');
-    INSERT INTO Passengers VALUES (v_Passenger);
-
-    COMMIT;
-END;
+CREATE TABLE Flight_Table OF Flight
+    NESTED TABLE List_taken_seats STORE AS Flight_Taken_Seats_Table,
+    NESTED TABLE Role_to_crew_list STORE AS Flight_Role_Crew_Table;
 /
 
--- Selecty
-SELECT * FROM Seats;
-SELECT * FROM Passengers;
-SELECT * FROM Reservations;
-SELECT * FROM Flights;
+ALTER TABLE Flight_Table 
+  ADD CONSTRAINT PK_Flight 
+  PRIMARY KEY (Id);
+/
+--------------------------------------------------------------------------------
+-- Typ dla pasaï¿½era
+--------------------------------------------------------------------------------
+CREATE OR REPLACE TYPE Passenger AS OBJECT (
+    Id              INT,
+    First_name      VARCHAR2(100),
+    Last_name       VARCHAR2(100),
+    Date_of_birth   DATE,
+    Email           VARCHAR2(150),
+    Phone           VARCHAR2(15),
+    Passport_number VARCHAR2(20),
+    Carer_id        INT
+);
+/
+
+CREATE TABLE Passenger_Table OF Passenger;
+/
+
+ALTER TABLE Passenger_Table 
+  ADD CONSTRAINT PK_Passenger 
+  PRIMARY KEY (Id);
+/
+--------------------------------------------------------------------------------
+-- Typ dla wsparcia technicznego
+--------------------------------------------------------------------------------
+CREATE OR REPLACE TYPE TechnicalSupport AS OBJECT (
+    Id             INT,
+    Name           VARCHAR2(100),
+    Specialization VARCHAR2(100),
+    Shift_start    TIMESTAMP,
+    Shift_end      TIMESTAMP,
+    Airport_IATA   CHAR(3)
+);
+/
+
+CREATE TABLE TechnicalSupport_Table OF TechnicalSupport;
+/
+
+ALTER TABLE TechnicalSupport_Table 
+  ADD CONSTRAINT PK_TechnicalSupport 
+  PRIMARY KEY (Id);
+/
+--------------------------------------------------------------------------------
+-- Typ kolekcji dla wsparcia technicznego
+--------------------------------------------------------------------------------
+CREATE OR REPLACE TYPE TechnicalSupportList AS TABLE OF REF TechnicalSupport;
+/
+--------------------------------------------------------------------------------
+-- Typ dla lotniska
+--------------------------------------------------------------------------------
+CREATE OR REPLACE TYPE Airport AS OBJECT (
+    IATA                    CHAR(3),
+    Name                    VARCHAR2(150),
+    Location                VARCHAR2(255),
+    Technical_Support_List  TechnicalSupportList
+);
+/
+
+CREATE TABLE Airport_Table OF Airport
+    NESTED TABLE Technical_Support_List STORE AS Airport_Technical_Support_Table;
+/
+
+ALTER TABLE Airport_Table 
+  ADD CONSTRAINT PK_Airport 
+  PRIMARY KEY (IATA);
+/
