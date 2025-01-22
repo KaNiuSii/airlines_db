@@ -119,7 +119,7 @@ CREATE TABLE PlaneSeat_Table OF PlaneSeat;
 
 ALTER TABLE PlaneSeat_Table 
   ADD CONSTRAINT PK_PlaneSeat 
-  PRIMARY KEY (SeatRow, SeatColumn);
+  PRIMARY KEY (Id);
 /
 --------------------------------------------------------------------------------
 -- Typ kolekcji dla miejsc w samolocie

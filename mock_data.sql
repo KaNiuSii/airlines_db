@@ -1,15 +1,15 @@
 -------------------------------------------------------------------------------
--- 1. Insert basic dictionary data (TravelClass, Role)
+-- Insert basic dictionary data (TravelClass, Role)
 -------------------------------------------------------------------------------
 insert into travelclass_table values ( travelclass(
    1,
    'Economy',
-   'Najta�sza klasa, podstawowe udogodnienia'
+   'Najtańsza klasa, podstawowe udogodnienia'
 ) );
 insert into travelclass_table values ( travelclass(
    2,
    'Premium',
-   'Lepsze siedzenia, dodatkowe us�ugi'
+   'Lepsze siedzenia, dodatkowe usługi'
 ) );
 insert into travelclass_table values ( travelclass(
    3,
@@ -31,7 +31,7 @@ insert into role_table values ( role(
 ) );
 
 -------------------------------------------------------------------------------
--- 2. Insert Airports and TechnicalSupport
+-- Insert Airports and TechnicalSupport
 -------------------------------------------------------------------------------
 insert into airport_table values ( airport(
    'WAW',
@@ -43,7 +43,7 @@ insert into airport_table values ( airport(
 insert into airport_table values ( airport(
    'KRK',
    'Krakow Airport',
-   'Krak�w, Polska',
+   'Kraków, Polska',
    technicalsupportlist()
 ) );
 
@@ -67,7 +67,7 @@ insert into technicalsupport_table values ( technicalsupport(
 ) );
 
 -------------------------------------------------------------------------------
--- 3. Insert Plane Seats
+-- Insert Plane Seats
 -------------------------------------------------------------------------------
 declare
    v_economy  ref travelclass;
@@ -87,7 +87,7 @@ begin
      from travelclass_table t
     where t.id = 3;
 
-  -- Seats for Plane 1 (Small)
+   -- Seats for Plane 1 (Small)
    insert into planeseat_table values ( planeseat(
       1,
       1,
@@ -117,7 +117,7 @@ begin
       200.0
    ) );
 
-  -- Seats for Plane 2 (Large)
+   -- Seats for Plane 2 (Large)
    insert into planeseat_table values ( planeseat(
       5,
       1,
@@ -157,7 +157,7 @@ end;
 /
 
 -------------------------------------------------------------------------------
--- 4. Insert Crew Members
+-- Insert Crew Members
 -------------------------------------------------------------------------------
 insert into crewmember_table values ( crewmember(
    1,
@@ -184,7 +184,7 @@ insert into crewmember_table values ( crewmember(
 ) );
 
 -------------------------------------------------------------------------------
--- 5. Assign Roles to Crew Members
+-- Assign Roles to Crew Members
 -------------------------------------------------------------------------------
 declare
    v_pilot   ref role;
@@ -203,7 +203,6 @@ begin
       set
       c.roles_list = rolelist(v_pilot)
     where c.id = 1;
-
    update crewmember_table c
       set
       c.roles_list = rolelist(v_copilot)
@@ -212,7 +211,7 @@ end;
 /
 
 -------------------------------------------------------------------------------
--- 6. Insert Planes with Seats and Required Roles
+-- Insert Planes with Seats and Required Roles
 -------------------------------------------------------------------------------
 declare
    v_seats_small  planeseatlist := planeseatlist();
@@ -229,27 +228,27 @@ begin
      from role_table r
     where r.role_name = 'CoPilot';
 
-  -- Plane 1 Seats
+   -- Plane 1 Seats
    for seat_ref in (
       select ref(ps) as r
         from planeseat_table ps
-       where ps.seatrow between 1 and 2
+       where ps.id between 1 and 4
    ) loop
       v_seats_small.extend(1);
       v_seats_small(v_seats_small.count) := seat_ref.r;
    end loop;
 
-  -- Plane 2 Seats
+   -- Plane 2 Seats
    for seat_ref in (
       select ref(ps) as r
         from planeseat_table ps
-       where ps.seatrow between 3 and 5
+       where ps.id between 5 and 9
    ) loop
       v_seats_big.extend(1);
       v_seats_big(v_seats_big.count) := seat_ref.r;
    end loop;
 
-  -- Insert Planes
+   -- Insert Planes
    insert into plane_table values ( plane(
       1,
       v_seats_small,
@@ -270,7 +269,7 @@ end;
 /
 
 -------------------------------------------------------------------------------
--- 7. Insert Passengers
+-- Insert Passengers
 -------------------------------------------------------------------------------
 insert into passenger_table values ( passenger(
    1,
@@ -297,36 +296,86 @@ insert into passenger_table values ( passenger(
 commit;
 
 -------------------------------------------------------------------------------
--- 8. Flights
+-- Insert Flights
 -------------------------------------------------------------------------------
-
 declare
-   v_seats_taken planeseatlist := planeseatlist(); -- Initialize empty seat list
+   v_seats_taken planeseatlist := planeseatlist();
 begin
    insert into flight_table values ( flight(
-      1,                -- Flight ID
-      1,                -- Plane ID
-      timestamp '2025-02-01 09:00:00',  -- Departure
-      timestamp '2025-02-01 11:00:00',  -- Arrival
-      'WAW',            -- IATA_from
-      'KRK',            -- IATA_to
-      timestamp '2025-01-31 23:59:00',  -- Reservation Closing
-      v_seats_taken,    -- Empty seats list for now
-      rolelist()        -- Empty crew list for now
+      1,
+      1,
+      timestamp '2025-02-01 09:00:00',
+      timestamp '2025-02-01 11:00:00',
+      'WAW',
+      'KRK',
+      timestamp '2025-01-31 23:59:00',
+      v_seats_taken,
+      rolelist()
    ) );
 
    insert into flight_table values ( flight(
-      2,                -- Flight ID
-      2,                -- Plane ID
-      timestamp '2025-02-02 14:00:00',  -- Departure
-      timestamp '2025-02-02 17:00:00',  -- Arrival
-      'KRK',            -- IATA_from
-      'WAW',            -- IATA_to
-      timestamp '2025-02-01 23:59:00',  -- Reservation Closing
-      v_seats_taken,    -- Empty seats list for now
-      rolelist()        -- Empty crew list for now
+      2,
+      2,
+      timestamp '2025-02-02 14:00:00',
+      timestamp '2025-02-02 17:00:00',
+      'KRK',
+      'WAW',
+      timestamp '2025-02-01 23:59:00',
+      v_seats_taken,
+      rolelist()
    ) );
 
    commit;
 end;
 /
+
+-------------------------------------------------------------------------------
+-- Insert Reservations
+-------------------------------------------------------------------------------
+insert into reservation_table values ( reservation(
+   1,
+   1,
+   1,
+   (
+      select ref(t)
+        from travelclass_table t
+       where t.id = 1
+   ),
+   null
+) );
+
+insert into reservation_table values ( reservation(
+   2,
+   1,
+   2,
+   (
+      select ref(t)
+        from travelclass_table t
+       where t.id = 2
+   ),
+   null
+) );
+
+insert into reservation_table values ( reservation(
+   3,
+   2,
+   1,
+   (
+      select ref(t)
+        from travelclass_table t
+       where t.id = 1
+   ),
+   null
+) );
+
+insert into reservation_table values ( reservation(
+   4,
+   2,
+   2,
+   (
+      select ref(t)
+        from travelclass_table t
+       where t.id = 3
+   ),
+   null
+) );

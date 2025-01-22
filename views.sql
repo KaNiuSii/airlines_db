@@ -94,3 +94,6 @@ select *
 
 select *
   from v_flights_seatings;
+
+select *
+  from reservation_table;
