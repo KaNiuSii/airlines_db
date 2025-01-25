@@ -43,28 +43,162 @@ insert into airport_table values ( airport(
 insert into airport_table values ( airport(
    'KRK',
    'Krakow Airport',
-   'KrakÃ³w, Polska',
+   'Kraków, Polska',
    technicalsupportlist()
 ) );
 
--- Technical Support Staff
-insert into technicalsupport_table values ( technicalsupport(
-   1,
-   'Jan Kowalski',
-   'Elektronika',
-   timestamp '2025-01-20 06:00:00',
-   timestamp '2025-01-20 14:00:00',
-   'WAW'
+insert into airport_table values ( airport(
+   'GDN',
+   'Gdansk Lech Walesa Airport',
+   'Gdañsk, Polska',
+   technicalsupportlist()
 ) );
 
-insert into technicalsupport_table values ( technicalsupport(
-   2,
-   'Anna Nowak',
-   'Silniki',
-   timestamp '2025-01-20 14:00:00',
-   timestamp '2025-01-20 22:00:00',
-   'WAW'
+insert into airport_table values ( airport(
+   'WRO',
+   'Copernicus Airport Wroclaw',
+   'Wroc³aw, Polska',
+   technicalsupportlist()
 ) );
+
+insert into airport_table values ( airport(
+   'KTW',
+   'Katowice Airport',
+   'Katowice, Polska',
+   technicalsupportlist()
+) );
+
+insert into airport_table values ( airport(
+   'POZ',
+   'Poznan Lawica Airport',
+   'Poznañ, Polska',
+   technicalsupportlist()
+) );
+
+
+----------------------
+-- Technical Support Staff
+----------------------
+-- Warsaw Chopin Airport (WAW)
+insert into technicalsupport_table values ( technicalsupport(
+   1, 'Jan Kowalski', 'Electronics', timestamp '2025-01-20 06:00:00', timestamp '2025-01-20 14:00:00', 'WAW'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   2, 'Anna Nowak', 'Engines', timestamp '2025-01-20 14:00:00', timestamp '2025-01-20 22:00:00', 'WAW'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   3, 'Piotr Zielinski', 'Hydraulics', timestamp '2025-01-21 06:00:00', timestamp '2025-01-21 14:00:00', 'WAW'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   4, 'Maria Lewandowska', 'Avionics', timestamp '2025-01-21 14:00:00', timestamp '2025-01-21 22:00:00', 'WAW'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   5, 'Tomasz Wojcik', 'Fuel Systems', timestamp '2025-01-22 06:00:00', timestamp '2025-01-22 14:00:00', 'WAW'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   6, 'Ewa Kaczmarek', 'Airframe Maintenance', timestamp '2025-01-22 14:00:00', timestamp '2025-01-22 22:00:00', 'WAW'
+) );
+
+-- Krakow Airport (KRK)
+insert into technicalsupport_table values ( technicalsupport(
+   7, 'Jakub Szymanski', 'Electronics', timestamp '2025-01-20 06:00:00', timestamp '2025-01-20 14:00:00', 'KRK'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   8, 'Agnieszka Wrobel', 'Engines', timestamp '2025-01-20 14:00:00', timestamp '2025-01-20 22:00:00', 'KRK'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   9, 'Krzysztof Nowicki', 'Hydraulics', timestamp '2025-01-21 06:00:00', timestamp '2025-01-21 14:00:00', 'KRK'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   10, 'Zofia Wisniewska', 'Avionics', timestamp '2025-01-21 14:00:00', timestamp '2025-01-21 22:00:00', 'KRK'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   11, 'Marek D¹browski', 'Fuel Systems', timestamp '2025-01-22 06:00:00', timestamp '2025-01-22 14:00:00', 'KRK'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   12, 'Katarzyna Adamczyk', 'Airframe Maintenance', timestamp '2025-01-22 14:00:00', timestamp '2025-01-22 22:00:00', 'KRK'
+) );
+
+-- Gdansk Airport (GDN)
+insert into technicalsupport_table values ( technicalsupport(
+   13, 'Andrzej Pawlak', 'Electronics', timestamp '2025-01-20 06:00:00', timestamp '2025-01-20 14:00:00', 'GDN'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   14, 'Barbara Michalska', 'Engines', timestamp '2025-01-20 14:00:00', timestamp '2025-01-20 22:00:00', 'GDN'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   15, 'Grzegorz Majewski', 'Hydraulics', timestamp '2025-01-21 06:00:00', timestamp '2025-01-21 14:00:00', 'GDN'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   16, 'Magdalena Sobczak', 'Avionics', timestamp '2025-01-21 14:00:00', timestamp '2025-01-21 22:00:00', 'GDN'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   17, 'Rafal Wojciechowski', 'Fuel Systems', timestamp '2025-01-22 06:00:00', timestamp '2025-01-22 14:00:00', 'GDN'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   18, 'Izabela Walczak', 'Airframe Maintenance', timestamp '2025-01-22 14:00:00', timestamp '2025-01-22 22:00:00', 'GDN'
+) );
+
+-- Wroclaw Airport (WRO)
+insert into technicalsupport_table values ( technicalsupport(
+   19, 'Lukasz Kwiatkowski', 'Electronics', timestamp '2025-01-20 06:00:00', timestamp '2025-01-20 14:00:00', 'WRO'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   20, 'Joanna Lis', 'Engines', timestamp '2025-01-20 14:00:00', timestamp '2025-01-20 22:00:00', 'WRO'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   21, 'Maciej Zalewski', 'Hydraulics', timestamp '2025-01-21 06:00:00', timestamp '2025-01-21 14:00:00', 'WRO'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   22, 'Pawel Kozlowski', 'Avionics', timestamp '2025-01-21 14:00:00', timestamp '2025-01-21 22:00:00', 'WRO'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   23, 'Natalia Gorska', 'Fuel Systems', timestamp '2025-01-22 06:00:00', timestamp '2025-01-22 14:00:00', 'WRO'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   24, 'Michal Sobolewski', 'Airframe Maintenance', timestamp '2025-01-22 14:00:00', timestamp '2025-01-22 22:00:00', 'WRO'
+) );
+
+-- Katowice Airport (KTW)
+insert into technicalsupport_table values ( technicalsupport(
+   25, 'Karolina Olszewska', 'Electronics', timestamp '2025-01-20 06:00:00', timestamp '2025-01-20 14:00:00', 'KTW'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   26, 'Damian Pawlak', 'Engines', timestamp '2025-01-20 14:00:00', timestamp '2025-01-20 22:00:00', 'KTW'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   27, 'Alicja Tomaszewska', 'Hydraulics', timestamp '2025-01-21 06:00:00', timestamp '2025-01-21 14:00:00', 'KTW'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   28, 'Jacek Kruk', 'Avionics', timestamp '2025-01-21 14:00:00', timestamp '2025-01-21 22:00:00', 'KTW'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   29, 'Marta Zajac', 'Fuel Systems', timestamp '2025-01-22 06:00:00', timestamp '2025-01-22 14:00:00', 'KTW'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   30, 'Wiktor Polak', 'Airframe Maintenance', timestamp '2025-01-22 14:00:00', timestamp '2025-01-22 22:00:00', 'KTW'
+) );
+
+-- Poznan Airport (POZ)
+insert into technicalsupport_table values ( technicalsupport(
+   31, 'Marcin Borowski', 'Electronics', timestamp '2025-01-20 06:00:00', timestamp '2025-01-20 14:00:00', 'POZ'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   32, 'Sylwia Zawadzka', 'Engines', timestamp '2025-01-20 14:00:00', timestamp '2025-01-20 22:00:00', 'POZ'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   33, 'Tadeusz Konieczny', 'Hydraulics', timestamp '2025-01-21 06:00:00', timestamp '2025-01-21 14:00:00', 'POZ'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   34, 'Magda Urbanska', 'Avionics', timestamp '2025-01-21 14:00:00', timestamp '2025-01-21 22:00:00', 'POZ'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   35, 'Radoslaw Czerwinski', 'Fuel Systems', timestamp '2025-01-22 06:00:00', timestamp '2025-01-22 14:00:00', 'POZ'
+) );
+insert into technicalsupport_table values ( technicalsupport(
+   36, 'Iwona Lesniak', 'Airframe Maintenance', timestamp '2025-01-22 14:00:00', timestamp '2025-01-22 22:00:00', 'POZ'
+) );
+
 
 -------------------------------------------------------------------------------
 -- Insert Plane Seats
@@ -293,6 +427,28 @@ insert into passenger_table values ( passenger(
    null
 ) );
 
+insert into passenger_table values ( passenger(
+   3,
+   'Dorosly',
+   'Czlowiek',
+   date '1995-12-25',
+   'dc@mail.com',
+   '981234321',
+   'PAS123123',
+   null
+) );
+
+insert into passenger_table values ( passenger(
+   4,
+   'Male',
+   'Dziecko',
+   date '1995-12-25',
+   'md@mail.com',
+   '981234321',
+   'PAS45612321',
+   3
+) );
+
 commit;
 
 -------------------------------------------------------------------------------
@@ -379,3 +535,115 @@ insert into reservation_table values ( reservation(
    ),
    null
 ) );
+
+----------------
+-- Planes techncail support
+----------------
+
+DECLARE
+   v_tech_list technicalsupportlist := technicalsupportlist();
+   v_ref       REF technicalsupport;
+
+   -- Define a collection to store airport codes
+   TYPE airport_list IS TABLE OF VARCHAR2(3);
+   v_airports airport_list := airport_list('WAW', 'KRK', 'GDN', 'WRO', 'KTW', 'POZ');
+BEGIN
+   -- Iterate through the list of airports
+   FOR i IN 1..v_airports.COUNT LOOP
+      v_tech_list := technicalsupportlist();
+      
+      -- Collect references to technical support staff for the current airport
+      FOR rec IN (
+         SELECT REF(ts) AS ref_tech
+         FROM technicalsupport_table ts
+         WHERE ts.Airport_IATA = v_airports(i)
+      ) LOOP
+         v_tech_list.EXTEND;
+         v_tech_list(v_tech_list.COUNT) := rec.ref_tech;
+      END LOOP;
+
+      -- Update the airport table with the technical support list
+      UPDATE airport_table
+      SET technical_support_list = v_tech_list
+      WHERE IATA = v_airports(i);
+   END LOOP;
+
+   COMMIT;
+END;
+/
+
+----------------
+-- More flights
+----------------
+DECLARE
+   v_seats_taken planeseatlist := planeseatlist();
+BEGIN
+   -- Plane 1: From KRK to GDN
+   insert into flight_table values ( flight(
+      3,
+      1, -- Plane 1
+      timestamp '2025-02-01 15:00:00', -- Departure
+      timestamp '2025-02-01 17:00:00', -- Arrival
+      'KRK', -- From
+      'GDN', -- To
+      timestamp '2025-01-31 23:59:00', -- Reservation Closing
+      v_seats_taken,
+      rolelist()
+   ) );
+
+   -- Plane 1: From GDN to WAW
+   insert into flight_table values ( flight(
+      4,
+      1, -- Plane 1
+      timestamp '2025-02-01 20:00:00', -- Departure
+      timestamp '2025-02-01 22:00:00', -- Arrival
+      'GDN', -- From
+      'WAW', -- To
+      timestamp '2025-02-01 15:59:00', -- Reservation Closing
+      v_seats_taken,
+      rolelist()
+   ) );
+
+   -- Plane 2: From WAW to KTW
+   insert into flight_table values ( flight(
+      5,
+      2, -- Plane 2
+      timestamp '2025-02-02 20:00:00', -- Departure
+      timestamp '2025-02-02 21:30:00', -- Arrival
+      'WAW', -- From
+      'KTW', -- To
+      timestamp '2025-02-02 19:00:00', -- Reservation Closing
+      v_seats_taken,
+      rolelist()
+   ) );
+
+   -- Plane 2: From KTW to WRO
+   insert into flight_table values ( flight(
+      6,
+      2, -- Plane 2
+      timestamp '2025-02-03 09:00:00', -- Departure
+      timestamp '2025-02-03 10:30:00', -- Arrival
+      'KTW', -- From
+      'WRO', -- To
+      timestamp '2025-02-03 08:00:00', -- Reservation Closing
+      v_seats_taken,
+      rolelist()
+   ) );
+
+   -- Plane 1: From WAW to POZ
+   insert into flight_table values ( flight(
+      7,
+      1, -- Plane 1
+      timestamp '2025-02-02 08:00:00', -- Departure
+      timestamp '2025-02-02 09:30:00', -- Arrival
+      'WAW', -- From
+      'POZ', -- To
+      timestamp '2025-02-01 23:59:00', -- Reservation Closing
+      v_seats_taken,
+      rolelist()
+   ) );
+
+   COMMIT;
+END;
+/
+
