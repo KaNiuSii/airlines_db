@@ -81,92 +81,117 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
         p_departure_time  IN TIMESTAMP,
         p_result          OUT BOOLEAN
     ) IS
-        last_arrival_time TIMESTAMP;
-        next_available_time TIMESTAMP;
-        flight_count NUMBER;
+        last_arrival_time    TIMESTAMP;
+        next_available_time  TIMESTAMP;
+        flight_count         NUMBER;
     BEGIN
-        -- Default result to FALSE
+        -- Domyœlnie ustawiamy FALSE
         p_result := FALSE;
-    
-        -- Get the plane's last flight and calculate the next available time
-        BEGIN
-            SELECT 
-                MAX(f.Arrival_datetime) AS Last_Arrival,
-                MAX(f.Arrival_datetime + INTERVAL '2' HOUR) AS Next_Available_Time
-            INTO 
-                last_arrival_time, next_available_time
-            FROM 
-                Flight_Table f
-            WHERE 
-                f.Plane_id = p_plane_id;
-    
-            -- Check if the requested flight can be scheduled
+
+        -- Pobieramy ostatni czas przylotu i wyznaczamy potencjalny czas, od kiedy samolot mo¿e startowaæ
+        SELECT 
+            MAX(f.Arrival_datetime)               AS Last_Arrival,
+            MAX(f.Arrival_datetime + INTERVAL '2' HOUR) AS Next_Available_Time
+        INTO 
+            last_arrival_time, 
+            next_available_time
+        FROM Flight_Table f
+        WHERE f.Plane_id = p_plane_id;
+
+        -- Sprawdzamy, czy w ogóle znaleziono jakikolwiek lot samolotu (last_arrival_time IS NULL => brak lotów)
+        IF last_arrival_time IS NULL THEN
+            -- Brak wczeœniejszych lotów — przyjmujemy, ¿e mo¿na zaplanowaæ pierwszy lot
+            -- (o ile logika biznesowa na to pozwala; np. zak³adamy, ¿e samolot stoi ju¿ na p_IATA_code)
+            p_result := TRUE;
+
+        ELSE
+            -- Samolot mia³ ju¿ jakieœ loty, wiêc sprawdzamy, czy obecny wylot jest ? next_available_time
             IF next_available_time <= p_departure_time THEN
-                -- Check if the plane will be at the requested airport
+                -- Sprawdzamy, czy samolot wyl¹dowa³ rzeczywiœcie na p_IATA_code
                 SELECT COUNT(*)
-                INTO flight_count
-                FROM Flight_Table f
-                WHERE f.Plane_id = p_plane_id
-                  AND f.IATA_to = p_IATA_code
-                  AND f.Arrival_datetime = last_arrival_time;
-    
-                -- Set the result based on the count
+                  INTO flight_count
+                  FROM Flight_Table f
+                 WHERE f.Plane_id       = p_plane_id
+                   AND f.IATA_to        = p_IATA_code
+                   AND f.Arrival_datetime = last_arrival_time;
+
+                -- Pomyœlny wynik, jeœli samolot stoi na w³aœciwym lotnisku i min¹³ wystarczaj¹cy czas
                 p_result := (flight_count > 0);
             END IF;
-        EXCEPTION
-            WHEN NO_DATA_FOUND THEN
-                -- If the plane has no flights, it can be scheduled
-                p_result := TRUE;
-        END;
+
+        END IF;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            -- Na wszelki wypadek w razie innego b³êdu ustawiæ FALSE lub LOG
+            p_result := FALSE;
     END can_schedule_flight;
 
 
     
-    PROCEDURE create_new_flight (
-        p_plane_id        IN NUMBER,
-        p_departure_time  IN TIMESTAMP,
-        p_arrival_time    IN TIMESTAMP,
-        p_IATA_from       IN CHAR,
-        p_IATA_to         IN CHAR
-    ) IS
-        can_schedule BOOLEAN;
-    BEGIN
-        -- Validate if the flight can be created
-        can_schedule_flight(
-            p_IATA_code      => p_IATA_from,
-            p_plane_id       => p_plane_id,
-            p_departure_time => p_departure_time,
-            p_result         => can_schedule
-        );
-    
-        -- If the flight can be scheduled, create the flight
-        IF can_schedule THEN
-            INSERT INTO Flight_Table (
-                Id,
-                Plane_id,
-                Departure_datetime,
-                Arrival_datetime,
-                IATA_from,
-                IATA_to,
-                Reservation_closing_datetime,
-                List_taken_seats,
-                Role_to_crew_list
-            ) VALUES (
-                (SELECT NVL(MAX(Id), 0) + 1 FROM Flight_Table), -- Generate a new ID
-                p_plane_id,
-                p_departure_time,
-                p_arrival_time,
-                p_IATA_from,
-                p_IATA_to,
-                p_departure_time - INTERVAL '1' DAY, -- Reservation closing 1 day before departure
-                planeseatlist(), -- Empty seat list
-                rolelist() -- Empty crew list
-            );
-            DBMS_OUTPUT.PUT_LINE('Flight successfully created for Plane ID ' || p_plane_id || ' from ' || p_IATA_from || ' to ' || p_IATA_to);
-        ELSE
-            DBMS_OUTPUT.PUT_LINE('Flight cannot be scheduled due to constraints.');
-        END IF;
-    END create_new_flight;
+    PROCEDURE create_new_flight(
+       p_plane_id        IN NUMBER,
+       p_departure_time  IN TIMESTAMP,
+       p_arrival_time    IN TIMESTAMP,
+       p_IATA_from       IN CHAR,
+       p_IATA_to         IN CHAR
+   ) IS
+       can_schedule BOOLEAN;
+       v_new_flight_id NUMBER;
+       V_CREW_COUNT NUMBER;
+   BEGIN
+       can_schedule_flight(
+           p_IATA_code      => p_IATA_from,
+           p_plane_id       => p_plane_id,
+           p_departure_time => p_departure_time,
+           p_result         => can_schedule
+       );
+
+       IF can_schedule THEN
+           SELECT NVL(MAX(Id),0)+1 INTO v_new_flight_id FROM Flight_Table;
+           
+           INSERT INTO Flight_Table (
+               Id,
+               Plane_id,
+               Departure_datetime,
+               Arrival_datetime,
+               IATA_from,
+               IATA_to,
+               Reservation_closing_datetime,
+               List_taken_seats,
+               Role_to_crew_list
+           ) VALUES (
+               v_new_flight_id,
+               p_plane_id,
+               p_departure_time,
+               p_arrival_time,
+               p_IATA_from,
+               p_IATA_to,
+               p_departure_time - INTERVAL '1' DAY,
+               PlaneSeatList(),
+               RoleList()  -- puste, bo w tym polu i tak mamy role, a nie crew
+           );
+           DBMS_OUTPUT.PUT_LINE('Flight created: ID='||v_new_flight_id);
+
+           -- Tutaj przydzielamy za³ogê
+           crew_management.assign_crew_to_flight(v_new_flight_id);
+           SELECT COUNT(*)
+             INTO v_crew_count
+             FROM CrewMemberAvailability_Table cma
+            WHERE cma.Flight_id = v_new_flight_id;
+
+           IF v_crew_count = 0 THEN
+               DELETE FROM Flight_Table WHERE Id = v_new_flight_id;
+               DBMS_OUTPUT.PUT_LINE('Cannot create flight '||v_new_flight_id
+                                    ||' - no crew assigned. Flight removed.');
+           ELSE
+               DBMS_OUTPUT.PUT_LINE('Crew assigned successfully for flight '||v_new_flight_id);
+           END IF;
+
+       ELSE
+           DBMS_OUTPUT.PUT_LINE('Flight cannot be scheduled due to constraints.');
+       END IF;
+   END create_new_flight;
 
 
 

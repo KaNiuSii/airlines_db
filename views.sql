@@ -78,6 +78,20 @@ create or replace view v_flights_seatings as
    on f.plane_id = p.id
     cross join table ( cast(p.seat_list as planeseatlist) ) s;
 
+CREATE OR REPLACE VIEW crew_availability_view AS
+SELECT 
+    cm.crew_member_id,
+    cm.last_iata,
+    LISTAGG(cr.role_name, ', ') WITHIN GROUP (ORDER BY cr.role_name) AS roles,
+    cm.available_datetime
+FROM 
+    crew_member_table cm
+LEFT JOIN 
+    crew_roles_table cr ON cm.crew_member_id = cr.crew_member_id
+GROUP BY 
+    cm.crew_member_id, cm.last_iata, cm.available_datetime;
+
+
 -------------------------------------------------------------------------------
 -- 2) SELECT z utworzonych widok�w
 -------------------------------------------------------------------------------

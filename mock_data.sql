@@ -647,3 +647,68 @@ BEGIN
 END;
 /
 
+-- Insert additional crew members
+insert into crewmember_table values ( crewmember(
+   3,
+   'Marek',
+   'Steward',
+   date '1992-08-20',
+   'marek.steward@airline.com',
+   '555123789',
+   'ST7654321',
+   rolelist(),
+   1200.0
+) );
+
+insert into crewmember_table values ( crewmember(
+   4,
+   'Anna',
+   'Pilot',
+   date '1988-04-15',
+   'anna.pilot@airline.com',
+   '555987654',
+   'PL9876543',
+   rolelist(),
+   2800.0
+) );
+
+insert into crewmember_table values ( crewmember(
+   5,
+   'Jan',
+   'CoPilot',
+   date '1991-11-30',
+   'jan.copilot@airline.com',
+   '555456789',
+   'CP4567890',
+   rolelist(),
+   1800.0
+) );
+
+-- Assign roles to new crew members
+declare
+   v_pilot   ref role;
+   v_copilot ref role;
+   v_steward ref role;
+begin
+   select ref(r) into v_pilot from role_table r where r.role_name = 'Pilot';
+   select ref(r) into v_copilot from role_table r where r.role_name = 'CoPilot';
+   select ref(r) into v_steward from role_table r where r.role_name = 'Steward';
+
+   update crewmember_table c set c.roles_list = rolelist(v_steward) where c.id = 3;
+   update crewmember_table c set c.roles_list = rolelist(v_pilot) where c.id = 4;
+   update crewmember_table c set c.roles_list = rolelist(v_copilot) where c.id = 5;
+end;
+/
+
+-- Insert crew availability data
+insert into crewmemberavailability_table values ( crewmemberavailability(
+   1, 1, 1, timestamp '2025-02-01 13:00:00'
+) );
+
+insert into crewmemberavailability_table values ( crewmemberavailability(
+   2, 2, 1, timestamp '2025-02-01 13:00:00'
+) );
+
+insert into crewmemberavailability_table values ( crewmemberavailability(
+   3, 3, 1, timestamp '2025-02-01 13:00:00'
+) );
