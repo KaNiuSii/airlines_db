@@ -1,348 +1,351 @@
---------------------------------------------------------------------------
--- [1] WSTAWIENIE DANYCH POCZ¥TKOWYCH
---     (Role, Klasy, Miejsca, Samoloty, Pasa¿erowie, CrewMember)
---     ZADBAMY OD RAZU O TO, ABY SCENARIUSZ PÓNIEJ DZIA£A£
---------------------------------------------------------------------------
 SET SERVEROUTPUT ON;
 
 BEGIN
-    DBMS_OUTPUT.PUT_LINE('=== [1.1] Dodawanie Ról ===');
-    INSERT INTO Role_Table VALUES (Role(1, 'Pilot'));
-    INSERT INTO Role_Table VALUES (Role(2, 'CoPilot'));
-    INSERT INTO Role_Table VALUES (Role(3, 'FlightAttendant'));
-    COMMIT;
-
-    DBMS_OUTPUT.PUT_LINE('--- Role_Table ---');
-    FOR r IN (SELECT * FROM Role_Table ORDER BY Id) LOOP
-       DBMS_OUTPUT.PUT_LINE('    '||r.Id||': '||r.Role_name);
-    END LOOP;
-    DBMS_OUTPUT.PUT_LINE('');
-
-    DBMS_OUTPUT.PUT_LINE('=== [1.2] Dodawanie Klas Podró¿y ===');
-    INSERT INTO TravelClass_Table VALUES (TravelClass(1, 'Economy','Tania klasa ekonomiczna'));
-    INSERT INTO TravelClass_Table VALUES (TravelClass(2, 'Business','Biznesowa, dro¿sza'));
-    COMMIT;
-
-    DBMS_OUTPUT.PUT_LINE('--- TravelClass_Table ---');
-    FOR tc IN (SELECT * FROM TravelClass_Table ORDER BY Id) LOOP
-       DBMS_OUTPUT.PUT_LINE('    '||tc.Id||': '||tc.Class_Name||' ('||tc.Description||')');
-    END LOOP;
-    DBMS_OUTPUT.PUT_LINE('');
-
-    DBMS_OUTPUT.PUT_LINE('=== [1.3] Dodawanie miejsc (PlaneSeat) ===');
-    -- Zrobimy minimalne "demonstracyjne" miejsca dla 2 samolotów.
-    -- Samolot #1 -> seatId: 101..104
-    -- Samolot #2 -> seatId: 201..206 (trochê wiêcej)
-    INSERT INTO PlaneSeat_Table VALUES (
-       PlaneSeat(101,1,1,(SELECT REF(t) FROM TravelClass_Table t WHERE t.Id=1), 150.0)
-    );
-    INSERT INTO PlaneSeat_Table VALUES (
-       PlaneSeat(102,1,2,(SELECT REF(t) FROM TravelClass_Table t WHERE t.Id=1), 150.0)
-    );
-    INSERT INTO PlaneSeat_Table VALUES (
-       PlaneSeat(103,2,1,(SELECT REF(t) FROM TravelClass_Table t WHERE t.Id=1), 150.0)
-    );
-    INSERT INTO PlaneSeat_Table VALUES (
-       PlaneSeat(104,2,2,(SELECT REF(t) FROM TravelClass_Table t WHERE t.Id=2), 300.0)
-    );
-
-    INSERT INTO PlaneSeat_Table VALUES (
-       PlaneSeat(201,1,1,(SELECT REF(t) FROM TravelClass_Table t WHERE t.Id=1), 120.0)
-    );
-    INSERT INTO PlaneSeat_Table VALUES (
-       PlaneSeat(202,1,2,(SELECT REF(t) FROM TravelClass_Table t WHERE t.Id=1), 120.0)
-    );
-    INSERT INTO PlaneSeat_Table VALUES (
-       PlaneSeat(203,2,1,(SELECT REF(t) FROM TravelClass_Table t WHERE t.Id=1), 120.0)
-    );
-    INSERT INTO PlaneSeat_Table VALUES (
-       PlaneSeat(204,2,2,(SELECT REF(t) FROM TravelClass_Table t WHERE t.Id=1), 120.0)
-    );
-    INSERT INTO PlaneSeat_Table VALUES (
-       PlaneSeat(205,1,3,(SELECT REF(t) FROM TravelClass_Table t WHERE t.Id=1), 120.0)
-    );
-    INSERT INTO PlaneSeat_Table VALUES (
-       PlaneSeat(206,2,3,(SELECT REF(t) FROM TravelClass_Table t WHERE t.Id=2), 320.0)
-    );
-    COMMIT;
-
-    DBMS_OUTPUT.PUT_LINE('--- PlaneSeat_Table count ---');
-    DECLARE c NUMBER; BEGIN 
-       SELECT COUNT(*) INTO c FROM PlaneSeat_Table;
-       DBMS_OUTPUT.PUT_LINE('    Liczba miejsc='||c);
-    END;
-    DBMS_OUTPUT.PUT_LINE('');
-
-    DBMS_OUTPUT.PUT_LINE('=== [1.4] Dodawanie Samolotów (Plane) z list¹ miejsc i wymaganych ról ===');
-    -- Samolot #1: wymaga Pilot(1) + FlightAttendant(3)
-    INSERT INTO Plane_Table VALUES (
-       Plane(
-         1,
-         PlaneSeatList(
-           (SELECT REF(ps) FROM PlaneSeat_Table ps WHERE ps.Id=101),
-           (SELECT REF(ps) FROM PlaneSeat_Table ps WHERE ps.Id=102),
-           (SELECT REF(ps) FROM PlaneSeat_Table ps WHERE ps.Id=103),
-           (SELECT REF(ps) FROM PlaneSeat_Table ps WHERE ps.Id=104)
-         ),
-         RoleList(
-           (SELECT REF(r) FROM Role_Table r WHERE r.Id=1), -- Pilot
-           (SELECT REF(r) FROM Role_Table r WHERE r.Id=3)  -- FlightAttendant
-         )
-       )
-    );
-
-    -- Samolot #2: wymaga Pilot(1) + CoPilot(2) + FlightAttendant(3)
-    INSERT INTO Plane_Table VALUES (
-       Plane(
-         2,
-         PlaneSeatList(
-           (SELECT REF(ps) FROM PlaneSeat_Table ps WHERE ps.Id=201),
-           (SELECT REF(ps) FROM PlaneSeat_Table ps WHERE ps.Id=202),
-           (SELECT REF(ps) FROM PlaneSeat_Table ps WHERE ps.Id=203),
-           (SELECT REF(ps) FROM PlaneSeat_Table ps WHERE ps.Id=204),
-           (SELECT REF(ps) FROM PlaneSeat_Table ps WHERE ps.Id=205),
-           (SELECT REF(ps) FROM PlaneSeat_Table ps WHERE ps.Id=206)
-         ),
-         RoleList(
-           (SELECT REF(r) FROM Role_Table r WHERE r.Id=1), -- Pilot
-           (SELECT REF(r) FROM Role_Table r WHERE r.Id=2), -- CoPilot
-           (SELECT REF(r) FROM Role_Table r WHERE r.Id=3)  -- FlightAttendant
-         )
-       )
-    );
-    COMMIT;
-
-    DBMS_OUTPUT.PUT_LINE('=== [1.5] Dodawanie przyk³adowych Lotnisk (Airport_Table) ===');
-    INSERT INTO Airport_Table VALUES (
-      Airport('WAW','Warsaw Chopin','Warszawa, Polska', TechnicalSupportList())
-    );
-    INSERT INTO Airport_Table VALUES (
-      Airport('LHR','Heathrow','Londyn, UK', TechnicalSupportList())
-    );
-    COMMIT;
-
-    DBMS_OUTPUT.PUT_LINE('=== [1.6] Dodawanie Pasa¿erów (Passenger_Table) ===');
-    -- #1 -> Jan (opiekun)
-    -- #2 -> Ola (dziecko, Carer=1)
-    INSERT INTO Passenger_Table VALUES (
-      Passenger(1,'Jan','Kowalski',DATE '1990-01-01','jan@example.com','111111111','PASSJAN',NULL)
-    );
-    INSERT INTO Passenger_Table VALUES (
-      Passenger(2,'Ola','Kowalska',DATE '2015-05-05','ola@example.com','222222222','PASSOLA',1)
-    );
-    COMMIT;
-
-    DBMS_OUTPUT.PUT_LINE('=== [1.7] Dodawanie cz³onków za³ogi (CrewMember_Table) ===');
-    -- Mamy 4 cz³onków, ¿eby móc obs³u¿yæ dwa samoloty:
-    -- #1 -> Pilot
-    -- #2 -> FlightAttendant
-    -- #3 -> Pilot + FlightAttendant
-    -- #4 -> Pilot + CoPilot
-    DBMS_OUTPUT.PUT_LINE('--- crew_management.add_crew_member(...) ---');
-    crew_management.add_crew_member(
-       p_first_name => 'Karol',
-       p_last_name  => 'Pilot1',
-       p_birth_date => DATE '1980-02-02',
-       p_email      => 'karol.pilot1@example.com',
-       p_phone      => '500100100',
-       p_passport   => 'PPILOT1',
-       p_role_ids   => SYS.ODCINUMBERLIST(1)  -- Pilot
-    );
-    crew_management.add_crew_member(
-       p_first_name => 'Monika',
-       p_last_name  => 'Steward1',
-       p_birth_date => DATE '1990-03-03',
-       p_email      => 'monika.stew1@example.com',
-       p_phone      => '500200200',
-       p_passport   => 'PSTEW1',
-       p_role_ids   => SYS.ODCINUMBERLIST(3)  -- FlightAttendant
-    );
-    crew_management.add_crew_member(
-       p_first_name => 'Artur',
-       p_last_name  => 'MultiPilotStew',
-       p_birth_date => DATE '1985-04-04',
-       p_email      => 'artur.multi@example.com',
-       p_phone      => '500300300',
-       p_passport   => 'PMULTI',
-       p_role_ids   => SYS.ODCINUMBERLIST(1,3) -- Pilot + FlightAttendant
-    );
-    crew_management.add_crew_member(
-       p_first_name => 'Piotr',
-       p_last_name  => 'PilotCoPilot',
-       p_birth_date => DATE '1975-05-05',
-       p_email      => 'piotr.double@example.com',
-       p_phone      => '500400400',
-       p_passport   => 'PCO',
-       p_role_ids   => SYS.ODCINUMBERLIST(1,2) -- Pilot + CoPilot
-    );
-    COMMIT;
-
+  DBMS_OUTPUT.PUT_LINE('--- TEST B1: create_new_flight z nieistniejacym samolotem (ID=999) ---');
+  -- Ten lot powinien siê NIE udaæ, bo samolot nie istnieje:
+  flight_management.create_new_flight(
+       p_plane_id        => 999,
+       p_departure_time  => SYSTIMESTAMP + INTERVAL '1' DAY,
+       p_arrival_time    => SYSTIMESTAMP + INTERVAL '1' DAY + INTERVAL '3' HOUR,
+       p_IATA_from       => 'JFK',
+       p_IATA_to         => 'LAX'
+  );
 END;
 /
---------------------------------------------------------------------------
--- [2] SCENARIUSZ: TWORZENIE LOTÓW + PRZYDZIA£ ZA£OGI
---------------------------------------------------------------------------
-DECLARE
-    v_cnt NUMBER;
+-- Oczekujemy komunikatu "Flight cannot be scheduled due to constraints." 
+-- Sprawdzamy, czy w Flight_Table coœ siê nie wstawi³o:
+SELECT * FROM Flight_Table;
+
 BEGIN
-    DBMS_OUTPUT.PUT_LINE('');
-    DBMS_OUTPUT.PUT_LINE('=== [2.1] Tworzymy Flight #1 (samolot #1) WAW->LHR, 2025-02-20 08:00->10:00 ===');
-    flight_management.create_new_flight(
-       p_plane_id       => 1, 
-       p_departure_time => TIMESTAMP'2025-02-20 08:00:00', 
-       p_arrival_time   => TIMESTAMP'2025-02-20 10:00:00',
-       p_IATA_from      => 'WAW',
-       p_IATA_to        => 'LHR'
-    );
-
-    SELECT COUNT(*) INTO v_cnt FROM Flight_Table;
-    DBMS_OUTPUT.PUT_LINE('--- Flight_Table count = '||v_cnt);
-
-    DBMS_OUTPUT.PUT_LINE('');
-    DBMS_OUTPUT.PUT_LINE('=== [2.2] Próba Flight #2 (LHR->WAW) za wczeœnie, np. 2025-02-20 20:00->22:00 ===');
-    DBMS_OUTPUT.PUT_LINE('--- To jest tylko 10h po 1. locie, za³oga potrzebuje 12h odpoczynku ---');
-    flight_management.create_new_flight(
-       p_plane_id       => 1,
-       p_departure_time => TIMESTAMP'2025-02-20 20:00:00',
-       p_arrival_time   => TIMESTAMP'2025-02-20 22:00:00',
-       p_IATA_from      => 'LHR',
-       p_IATA_to        => 'WAW'
-    );
-
-    DBMS_OUTPUT.PUT_LINE('');
-    DBMS_OUTPUT.PUT_LINE('=== [2.3] Ponawiamy Flight #2, tym razem 2025-02-20 22:30->2025-02-21 00:30 ===');
-    DBMS_OUTPUT.PUT_LINE('--- Teraz minie 12,5h od poprzedniego l¹dowania (10:00 -> 22:30), wiêc za³oga mo¿e lecieæ ---');
-    flight_management.create_new_flight(
-       p_plane_id       => 1,
-       p_departure_time => TIMESTAMP'2025-02-20 22:30:00',
-       p_arrival_time   => TIMESTAMP'2025-02-21 00:30:00',
-       p_IATA_from      => 'LHR',
-       p_IATA_to        => 'WAW'
-    );
-
-    SELECT COUNT(*) INTO v_cnt FROM Flight_Table;
-    DBMS_OUTPUT.PUT_LINE('--- Flight_Table count = '||v_cnt);
-
-    DBMS_OUTPUT.PUT_LINE('');
-    DBMS_OUTPUT.PUT_LINE('=== [2.4] Tworzymy Flight #3 (samolot #2) WAW->LHR, 2025-02-21 12:30->14:30 ===');
-    DBMS_OUTPUT.PUT_LINE('--- Samolot #2 wymaga 3 ról: Pilot, CoPilot, FlightAttendant ---');
-    DBMS_OUTPUT.PUT_LINE('--- Za³oga z lotu #2 wyl¹duje w WAW o 00:30, po 12h odpoczynku bêdzie wolna od 12:30. ---');
-    flight_management.create_new_flight(
-       p_plane_id       => 2,
-       p_departure_time => TIMESTAMP'2025-02-21 12:30:00',
-       p_arrival_time   => TIMESTAMP'2025-02-21 14:30:00',
-       p_IATA_from      => 'WAW',
-       p_IATA_to        => 'LHR'
-    );
-
-    SELECT COUNT(*) INTO v_cnt FROM Flight_Table;
-    DBMS_OUTPUT.PUT_LINE('--- Flight_Table count = '||v_cnt);
-
+  DBMS_OUTPUT.PUT_LINE('--- TEST B2: create_new_flight LAX -> JFK ---');
+  -- Ten lot powinien siê udaæ:
+  flight_management.create_new_flight(
+       p_plane_id        => 1,
+       p_departure_time  => SYSTIMESTAMP + INTERVAL '1' DAY,
+       p_arrival_time    => SYSTIMESTAMP + INTERVAL '1' DAY + INTERVAL '4' HOUR,
+       p_IATA_from       => 'LAX',
+       p_IATA_to         => 'JFK'
+  );
 END;
 /
 
---------------------------------------------------------------------------
--- [3] REZERWACJE + PRZYDZIA£ MIEJSC (OPIEKUN-DZIECKO)
---------------------------------------------------------------------------
-DECLARE
-    v_flight_id  NUMBER;
-    v_new_res_id NUMBER;
-BEGIN
-    DBMS_OUTPUT.PUT_LINE('');
-    DBMS_OUTPUT.PUT_LINE('=== [3.1] Sprawdzamy ID nowszego lotu (Flight #3) - powinien byæ = 3 albo 4... ===');
-    -- Tu, dla uproszczenia, weŸmy po prostu najwy¿szy ID:
-    SELECT MAX(f.Id) INTO v_flight_id FROM Flight_Table f;
-    DBMS_OUTPUT.PUT_LINE('    Najnowszy lot ma Id='||v_flight_id);
+SELECT * FROM Flight_Table;
 
-    DBMS_OUTPUT.PUT_LINE('');
-    DBMS_OUTPUT.PUT_LINE('=== [3.2] Dodajemy 2 rezerwacje na ten lot: pasa¿er #1 (Jan - opiekun), pasa¿er #2 (Ola - dziecko) ===');
-    SELECT NVL(MAX(r.Id),0)+1 INTO v_new_res_id FROM Reservation_Table;
-    INSERT INTO Reservation_Table VALUES(
-      Reservation(
-        v_new_res_id,      -- np. 101
-        v_flight_id,
-        1,                 -- Jan
-        (SELECT REF(tc) FROM TravelClass_Table tc WHERE tc.Id=1), -- Economy
-        NULL
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('--- TEST B3: create_new_flight za wczesnie po poprzednim locie ---');
+
+  -- Poprzedni lot wyl¹dowa³ (wg B2) w JFK, np. SYSTIMESTAMP +1 day +4h.
+  -- Spróbujmy zrobiæ kolejny lot w JFK z wylotem niewiele póŸniej, np. +4h30min 
+  flight_management.create_new_flight(
+       p_plane_id        => 1,
+       p_departure_time  => SYSTIMESTAMP + INTERVAL '1' DAY + INTERVAL '4' HOUR + INTERVAL '30' MINUTE,
+       p_arrival_time    => SYSTIMESTAMP + INTERVAL '1' DAY + INTERVAL '6' HOUR,
+       p_IATA_from       => 'JFK',
+       p_IATA_to         => 'LAX'
+  );
+END;
+/
+SELECT * FROM Flight_Table;
+-- Oczekujemy, ¿e DBMS_OUTPUT powie "Flight cannot be scheduled..."
+-- i w Flight_Table *nie* powstanie nowy wpis.
+
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('--- TEST B4: create_new_flight po 2h przerwie ---');
+  -- Poprzedni lot z B2 l¹duje w JFK np. (SYSTIMESTAMP + 1 day + 4h).
+  -- Aby minê³o 2h, start dajmy (SYSTIMESTAMP + 1 day + 6h).
+  flight_management.create_new_flight(
+       p_plane_id        => 1,
+       p_departure_time  => SYSTIMESTAMP + INTERVAL '1' DAY + INTERVAL '6' HOUR,
+       p_arrival_time    => SYSTIMESTAMP + INTERVAL '1' DAY + INTERVAL '8' HOUR,
+       p_IATA_from       => 'JFK',
+       p_IATA_to         => 'LAX'
+  );
+END;
+/
+-- To jenak siê nie uda poniewa¿ brakuje wolnego in¿yniera który móg³by lecieæ.
+
+SELECT * FROM Flight_Table;
+SELECT * FROM CrewMemberAvailability_Table;
+
+-- Dlatego dodamy tak owego
+
+-- Add Engineer
+DECLARE
+    v_roles RoleList := RoleList();
+BEGIN
+    -- Add Engineer
+    SELECT REF(r) BULK COLLECT INTO v_roles FROM Role_Table r WHERE r.Id = 3;
+    INSERT INTO CrewMember_Table VALUES (
+        CrewMember(6, 'Nowy', 'Inzynier', DATE '1988-05-01', 'robert.taylor@example.com', '123321132', 'E74652', v_roles, 0)
+    );
+END;
+/
+
+-- powtarzamy operacje
+
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('--- TEST B4: create_new_flight po 2h przerwie ---');
+  flight_management.create_new_flight(
+       p_plane_id        => 1,
+       p_departure_time  => SYSTIMESTAMP + INTERVAL '1' DAY + INTERVAL '6' HOUR,
+       p_arrival_time    => SYSTIMESTAMP + INTERVAL '1' DAY + INTERVAL '8' HOUR,
+       p_IATA_from       => 'JFK',
+       p_IATA_to         => 'LAX'
+  );
+END;
+/
+-- To jenak siê nie uda poniewa¿ brakuje wolnego in¿yniera który móg³by lecieæ.
+
+SELECT * FROM Flight_Table;
+SELECT * FROM CrewMemberAvailability_Table;
+
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('--- TEST B5: Dostêpne samoloty na JFK ---');
+  flight_management.print_available_planes_for_next_flight('JFK');
+  DBMS_OUTPUT.PUT_LINE('--- TEST B5: Dostêpne samoloty na LAX ---');
+  flight_management.print_available_planes_for_next_flight('LAX');
+END;
+/
+
+DECLARE
+  v_roles SYS.ODCINUMBERLIST := SYS.ODCINUMBERLIST(1);  -- rola = Pilot (ID=1)
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('--- TEST C1: Dodanie nowego crew member ---');
+  crew_management.add_crew_member(
+       p_first_name   => 'NewPilot',
+       p_last_name    => 'Test',
+       p_birth_date   => DATE '1980-10-10',
+       p_email        => 'pilot.test@example.com',
+       p_phone        => '111222333',
+       p_passport     => 'P4321',
+       p_role_ids     => v_roles
+  );
+END;
+/
+SELECT * FROM CrewMember_Table ORDER BY Id;
+
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('--- TEST C2: assign_crew_to_flight na istniej¹cy lot (np. ID=2) ---');
+  crew_management.assign_crew_to_flight(2);
+END;
+/
+-- Prawdopodobnie pojawi siê komunikat "Znaleziono za³ogê..." lub "Brak wystarczaj¹cej liczby dostêpnych za³ogantów..."
+SELECT * FROM CrewMemberAvailability_Table WHERE Flight_id = 2;
+
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('--- TEST D1: Dodawanie doroslego pasazera ---');
+  reservation_management.add_passenger(
+    p_first_name      => 'Adam',
+    p_last_name       => 'Nowak',
+    p_date_of_birth   => DATE '1980-07-05',
+    p_email           => 'adam.nowak@example.com',
+    p_phone           => '999888777',
+    p_passport_number => 'XYZ111'
+  );
+END;
+/
+SELECT * FROM Passenger_Table;
+
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('--- TEST D2: Dodanie dziecka bez opiekuna ---');
+  reservation_management.add_passenger(
+    p_first_name      => 'Tom',
+    p_last_name       => 'Junior',
+    p_date_of_birth   => ADD_MONTHS(SYSDATE, -6*12), -- 6 lat
+    p_email           => 'tom.junior@example.com',
+    p_phone           => '123123123',
+    p_passport_number => 'XYZCHILD'
+    -- p_carer_id => NULL
+  );
+END;
+/
+-- Powinien wyst¹piæ b³¹d: "Child under 12 must have a carer."
+SELECT * FROM Passenger_Table;
+-- Sprawdzamy, ¿e dziecko siê NIE wstawi³o.
+
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('--- TEST D3: Dodanie dziecka z opiekunem ID=1 ---');
+  reservation_management.add_passenger(
+    p_first_name      => 'Tom',
+    p_last_name       => 'Junior',
+    p_date_of_birth   => DATE '2018-07-05',  -- 6 lat
+    p_email           => 'tom.junior@example.com',
+    p_phone           => '123123123',
+    p_passport_number => 'XYZCHILD',
+    p_carer_id        => 1                  -- ID doros³ego
+  );
+END;
+/
+SELECT * FROM Passenger_Table ORDER BY Id;
+-- Sprawdzamy, czy pojawi³ siê nowy pasa¿er (Tom Junior) i ma carer_id=1.
+
+DECLARE
+   v_passengers SYS.ODCINUMBERLIST := SYS.ODCINUMBERLIST(1,2); -- Adam i Tom
+BEGIN
+   DBMS_OUTPUT.PUT_LINE('--- TEST D4: add_reservation dla lotu ID=2, klasa 1 (Economy) ---');
+   reservation_management.add_reservation(
+       p_flight_id       => 2,
+       p_passenger_ids   => v_passengers,
+       p_travel_class_id => 1  -- Economy
+   );
+END;
+/
+SELECT * FROM Reservation_Table WHERE Flight_id = 2;
+
+DECLARE
+   v_passengers SYS.ODCINUMBERLIST := SYS.ODCINUMBERLIST();
+BEGIN
+   DBMS_OUTPUT.PUT_LINE('--- TEST D5: zbyt wiele miejsc w Economy ---');
+   FOR i IN 1..25 LOOP
+     v_passengers.EXTEND;
+     v_passengers(v_passengers.COUNT) := i+100; 
+     -- Zak³adamy, ¿e mamy pasa¿erów z ID=101..125. W praktyce pewnie ich nie ma,
+     -- ale test zademonstruje b³¹d "Not enough seats available".
+   END LOOP;
+
+   reservation_management.add_reservation(
+       p_flight_id       => 2,
+       p_passenger_ids   => v_passengers,
+       p_travel_class_id => 1
+   );
+END;
+/
+-- Oczekujemy RAISE_APPLICATION_ERROR(-20003, 'Not enough seats available...').
+SELECT * FROM Reservation_Table WHERE Flight_id = 2;
+-- Sprawdzamy, ¿e siê nic nowego nie wstawi³o.
+
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('--- TEST D6: upgrade_travel_class na rezerwacji ID=? ---');
+  reservation_management.upgrade_travel_class(
+       p_reservation_id => 1,  -- lub wstaw odpowiednie ID
+       p_new_class_id   => 2   -- Business
+  );
+END;
+/
+SELECT r.Id, r.Flight_id, r.Requested_Class.Id as class_id
+FROM Reservation_Table r
+WHERE r.Id = 1; -- sprawdzamy, czy klasa siê zmieni³a
+
+DECLARE
+   v_res  SYS.ODCINUMBERLIST     := SYS.ODCINUMBERLIST();
+   v_seat SYS.ODCIVARCHAR2LIST   := SYS.ODCIVARCHAR2LIST();
+BEGIN
+   DBMS_OUTPUT.PUT_LINE('--- TEST D7a: seat_is_taken - siedzisko juz zajete ---');
+
+   -- 1) Najpierw *rêcznie* przypiszmy rezerwacji 1 seat "2A"
+   v_res.EXTEND;  v_res(1) := 1;   -- rezerwacja 1
+   v_seat.EXTEND; v_seat(1) := '2A';
+
+   flight_management.take_seat_at_flight(
+      p_flight_id         => 2,
+      p_reservation_list  => v_res,
+      p_seat_list         => v_seat
+   );
+
+   -- 2) Teraz spróbujmy *ponownie* u¿yæ "2A" dla innej rezerwacji, np. ID=2
+   v_res(1)  := 2;    -- zmieniamy tylko ID rezerwacji
+   v_seat(1) := '2A'; -- seat ten sam
+
+   flight_management.take_seat_at_flight(
+      p_flight_id         => 2,
+      p_reservation_list  => v_res,
+      p_seat_list         => v_seat
+   );
+   -- powinien wyœwietliæ komunikat: "Seat 2A is already taken..."
+END;
+/
+SELECT Id, Seat
+FROM Reservation_Table
+WHERE Flight_id = 2;
+
+----
+-- D7b
+----
+
+--Jeœli rezerwacja ID=2 ma Requested_Class.Id = 1 (Economy), a my wska¿emy seat z Business (ID=2).
+--Musimy mieæ w PlaneSeat_Table jakieœ miejsca w klasie 2, a w mocku mamy na razie wszystkie w Economy.
+--Wiêc do testu dopiszmy np. wiersz w PlaneSeat_Table z kolumn¹ TravelClassRef => (REF Business)
+
+DECLARE
+    v_class_ref   REF TravelClass;
+BEGIN
+    -- Najpierw weŸmy REF do TravelClass(2) = 'Business'
+    SELECT REF(tc)
+      INTO v_class_ref
+      FROM TravelClass_Table tc
+     WHERE tc.Id = 2;
+
+    INSERT INTO PlaneSeat_Table VALUES (
+      PlaneSeat(
+        Id             => 999,   -- unikalny
+        SeatRow        => 1,
+        SeatColumn     => 10,    -- kolumna 10, dziwna, ale do testu
+        TravelClassRef => v_class_ref,
+        Price          => 500.0
       )
     );
-    SELECT NVL(MAX(r.Id),0)+1 INTO v_new_res_id FROM Reservation_Table;
-    INSERT INTO Reservation_Table VALUES(
-      Reservation(
-        v_new_res_id,      -- np. 102
-        v_flight_id,
-        2,                 -- Ola
-        (SELECT REF(tc) FROM TravelClass_Table tc WHERE tc.Id=1), -- Economy
-        NULL
-      )
-    );
-    COMMIT;
-
-    DBMS_OUTPUT.PUT_LINE('--- Rezerwacje na Flight_Id='||v_flight_id||' ---');
-    FOR rr IN (
-       SELECT r.Id, r.Passenger_id, r.Flight_id
-         FROM Reservation_Table r
-        WHERE r.Flight_id = v_flight_id
-        ORDER BY r.Id
-    ) LOOP
-       DBMS_OUTPUT.PUT_LINE('    ResID='||rr.Id
-          ||', Passenger='||rr.Passenger_id
-          ||', Flight='||rr.Flight_id);
-    END LOOP;
-
-    DBMS_OUTPUT.PUT_LINE('');
-    DBMS_OUTPUT.PUT_LINE('=== [3.3] Podejrzyjmy uk³ad miejsc samolotu #2 ===');
-    flight_management.show_plane_seats_distribution(2);
-
-    DBMS_OUTPUT.PUT_LINE('');
-    DBMS_OUTPUT.PUT_LINE('=== [3.4] Próba rezerwacji miejsc - Z£A: (Jan -> 1A, Ola -> 2C) ===');
-    DBMS_OUTPUT.PUT_LINE('--- Wed³ug caretaker_sits_next_to_child te miejsca nie s¹ obok siebie ---');
-    -- Przyjmijmy seat label "1A" => row=1,col=1 i "2C" => row=2,col=3
-    -- co jest zbyt daleko.
-    flight_management.take_seat_at_flight(
-      p_flight_id        => v_flight_id,
-      p_reservation_list => SYS.ODCINUMBERLIST(101, 102),
-      p_seat_list        => SYS.ODCIVARCHAR2LIST('1A','2C')
-    );
-
-    DBMS_OUTPUT.PUT_LINE('');
-    DBMS_OUTPUT.PUT_LINE('=== [3.5] Poprawna rezerwacja miejsc - (Jan -> 1A, Ola -> 2A), obok siebie w pionie ===');
-    -- Zgodnie z definicj¹ caretaker_sits_next_to_child: 
-    --  "same column, row differs by 1" => 1A ->(1,1), 2A->(2,1).
-    flight_management.take_seat_at_flight(
-      p_flight_id        => v_flight_id,
-      p_reservation_list => SYS.ODCINUMBERLIST(101, 102),
-      p_seat_list        => SYS.ODCIVARCHAR2LIST('1A','2A')
-    );
-
-    DBMS_OUTPUT.PUT_LINE('');
-    DBMS_OUTPUT.PUT_LINE('=== [3.6] Podsumowanie rezerwacji i zajêtych miejsc w Flight_Table ===');
-
-    DBMS_OUTPUT.PUT_LINE('--- Reservation_Table z seat ---');
-    FOR rec IN (
-      SELECT r.Id, r.Passenger_id, 
-             DEREF(r.Seat).SeatRow as seat_row,
-             DEREF(r.Seat).SeatColumn as seat_col
-      FROM Reservation_Table r
-      ORDER BY r.Id
-    ) LOOP
-      DBMS_OUTPUT.PUT_LINE('    ResID='||rec.Id||', Psg='||rec.Passenger_id
-        ||', Seat('||rec.seat_row||','||rec.seat_col||')');
-    END LOOP;
-
-    DBMS_OUTPUT.PUT_LINE('--- Flight_Table.List_taken_seats (dla Flight_Id='||v_flight_id||') ---');
-    FOR seatRef IN (
-      SELECT COLUMN_VALUE AS ref_seat
-      FROM Flight_Table f, TABLE(f.List_taken_seats)
-      WHERE f.Id = v_flight_id
-    ) LOOP
-       DECLARE
-         s PlaneSeat;
-       BEGIN
-         SELECT DEREF(seatRef.ref_seat) INTO s FROM DUAL;
-         DBMS_OUTPUT.PUT_LINE('    SeatId='||s.Id||' => (row='||s.SeatRow||',col='||s.SeatColumn||')');
-       END;
-    END LOOP;
-
 END;
 /
+
+-- Teraz seat "1J" (bo 'A'=1, 'B'=2, ... 'J'=10). 
+-- Spróbujmy zarezerwowaæ ten seat w rezerwacji ID=2, która jest Economy:
+
+DECLARE
+   v_res  SYS.ODCINUMBERLIST     := SYS.ODCINUMBERLIST(2);   -- rezerwacja 2 (Economy)
+   v_seat SYS.ODCIVARCHAR2LIST   := SYS.ODCIVARCHAR2LIST('1J');
+BEGIN
+   DBMS_OUTPUT.PUT_LINE('--- TEST D7b: siedzisko w innej klasie (Business zamiast Economy) ---');
+   flight_management.take_seat_at_flight(
+      p_flight_id         => 2,
+      p_reservation_list  => v_res,
+      p_seat_list         => v_seat
+   );
+END;
+/
+-- Powinno byæ: "Seat 1J does not match the requested travel class..."
+-- a rezerwacja ID=2 dalej Seat = NULL
+SELECT Id, Seat FROM Reservation_Table WHERE Id=2;
+
+DECLARE
+   v_res  SYS.ODCINUMBERLIST    := SYS.ODCINUMBERLIST(1,2);
+   v_seat SYS.ODCIVARCHAR2LIST  := SYS.ODCIVARCHAR2LIST('2A','2B');
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('--- TEST D7c: caretaker adjacency error ---');
+  flight_management.take_seat_at_flight(
+    p_flight_id         => 2,
+    p_reservation_list  => v_res,
+    p_seat_list         => v_seat
+  );
+END;
+/
+-- Oczekujemy "Caretaker ... wanted seats next to them... Aborting."
+SELECT Id, Seat FROM Reservation_Table WHERE Id IN (1,2);
+-- Pozostan¹ stare wartoœci Seat
+
+DECLARE
+   v_res  SYS.ODCINUMBERLIST    := SYS.ODCINUMBERLIST(1,2);
+   v_seat SYS.ODCIVARCHAR2LIST  := SYS.ODCIVARCHAR2LIST('2A','3A');
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('--- TEST D7d: caretaker adjacency success ---');
+  flight_management.take_seat_at_flight(
+    p_flight_id         => 2,
+    p_reservation_list  => v_res,
+    p_seat_list         => v_seat
+  );
+END;
+/
+SELECT Id, Seat FROM Reservation_Table WHERE Id IN (1,2);
+-- Powinny byæ przypisane: 1->2A, 2->3A.
+-- Dodatkowo w Flight_Table.List_taken_seats widaæ, ¿e dosz³y REFy do tych siedzeñ.
+
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('--- TEST D8: close_reservation(2) ---');
+  reservation_management.close_reservation(p_flight_id => 2);
+END;
+/
+SELECT Id, Seat FROM Reservation_Table WHERE Flight_id = 2;
+-- Zobaczymy, czy automatycznie przydzieli³o miejsca (losowo).
+
+
+
+

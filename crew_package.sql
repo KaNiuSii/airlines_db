@@ -60,6 +60,93 @@ END crew_management;
 
 
 CREATE OR REPLACE PACKAGE BODY crew_management AS
+    FUNCTION find_available_crew (
+        p_departure_time     IN TIMESTAMP,
+        p_arrival_time       IN TIMESTAMP,
+        p_departure_airport  IN CHAR,
+        p_required_roles     IN RoleList
+    ) RETURN crew_assignment_list IS
+        v_result           crew_assignment_list := crew_assignment_list();
+        v_crew_rec         crew_assignment_rec;
+    BEGIN
+        -- Dla ka¿dej wymaganej roli szukamy dostêpnego za³oganta
+        FOR i IN 1..p_required_roles.COUNT LOOP
+            DECLARE
+                l_role_obj ROLE;
+                v_role_id  NUMBER;
+            BEGIN
+                SELECT DEREF(p_required_roles(i))
+                  INTO l_role_obj
+                  FROM DUAL;
+    
+                v_role_id := l_role_obj.Id;
+    
+                FOR candidate IN (
+                    SELECT c.Id AS crew_member_id,
+                           r.Id AS role_id
+                      FROM CrewMember_Table c
+                      CROSS JOIN TABLE(c.Roles_list) cr
+                      JOIN Role_Table r ON r.Id = DEREF(cr.COLUMN_VALUE).Id
+                     WHERE r.Id = v_role_id
+                ) LOOP
+                    -- SprawdŸ dostêpnoœæ kandydata
+                    IF is_crew_available(
+                         p_crew_id        => candidate.crew_member_id,
+                         p_departure_time => p_departure_time,
+                         p_arrival_time   => p_arrival_time
+                    ) THEN
+                        -- SprawdŸ lokalizacjê za³oganta
+                        DECLARE
+                            v_last_airport CHAR(3);
+                        BEGIN
+                            v_last_airport := get_last_flight_airport(candidate.crew_member_id);
+    
+                            IF v_last_airport IS NULL 
+                               OR v_last_airport = p_departure_airport THEN
+                                v_crew_rec.crew_member_id := candidate.crew_member_id;
+                                v_crew_rec.role_id        := candidate.role_id;
+                                v_result.EXTEND;
+                                v_result(v_result.COUNT) := v_crew_rec;
+                                EXIT;
+                            END IF;
+                        END;
+                    END IF;
+                END LOOP;
+            END;
+        END LOOP;
+    
+        IF v_result.COUNT < p_required_roles.COUNT THEN
+            RETURN NULL;
+        END IF;
+    
+        RETURN v_result;
+    END find_available_crew;
+    
+    FUNCTION get_last_flight_airport (
+        p_crew_id IN NUMBER
+    ) RETURN CHAR IS
+        v_airport CHAR(3);
+    BEGIN
+        SELECT f.IATA_to
+          INTO v_airport
+          FROM Flight_Table f
+          JOIN CrewMemberAvailability_Table cma
+               ON cma.Flight_id = f.Id
+         WHERE cma.Crew_member_id = p_crew_id
+           AND f.Arrival_datetime = (
+               SELECT MAX(f2.Arrival_datetime)
+                 FROM Flight_Table f2
+                 JOIN CrewMemberAvailability_Table cma2
+                   ON cma2.Flight_id = f2.Id
+                WHERE cma2.Crew_member_id = p_crew_id
+           );
+    
+        RETURN v_airport;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RETURN NULL;
+    END get_last_flight_airport;
+
 
    ----------------------------------------------------------------------------
    -- Procedura dodania nowego cz³onka za³ogi
@@ -107,10 +194,22 @@ CREATE OR REPLACE PACKAGE BODY crew_management AS
    END add_crew_member;
 
    ----------------------------------------------------------------------------
-   -- Funkcja sprawdza dostêpnoœæ za³oganta:
-   --  - szuka ostatniego lotu, w którym bra³ udzia³ (CrewMemberAvailability_Table),
-   --  - sprawdza minimalny czas odpoczynku (c_min_rest_hours),
-   --  - weryfikuje limit godzin w ci¹gu 7 dni (c_max_flight_hours_per_week).
+   -- Funkcja okreœlaj¹ca czas przerwy na podstawie regu³ biznesowych
+   ----------------------------------------------------------------------------
+   FUNCTION calculate_rest_period (
+       p_flight_hours          IN NUMBER,
+       p_recent_flights_count  IN NUMBER
+   ) RETURN NUMBER IS
+   BEGIN
+       IF p_flight_hours > 10 OR p_recent_flights_count >= 4 THEN
+           RETURN 12; -- Pe³na przerwa
+       ELSE
+           RETURN 2; -- Minimalna przerwa
+       END IF;
+   END calculate_rest_period;
+
+   ----------------------------------------------------------------------------
+   -- Funkcja sprawdzaj¹ca dostêpnoœæ za³oganta
    ----------------------------------------------------------------------------
    FUNCTION is_crew_available (
        p_crew_id          IN NUMBER,
@@ -120,9 +219,12 @@ CREATE OR REPLACE PACKAGE BODY crew_management AS
    IS
        v_last_flight_end   TIMESTAMP;
        v_weekly_hours      NUMBER;
+       v_recent_flight_hours NUMBER := 0;
+       v_temp_departure     TIMESTAMP;
+       v_temp_arrival       TIMESTAMP;
    BEGIN
        ------------------------------------------------------------------------
-       -- 1) ZnajdŸ koniec ostatniego lotu, w którym crew bra³ udzia³
+       -- 0) ZnajdŸ koniec ostatniego lotu, w którym crew bra³ udzia³
        ------------------------------------------------------------------------
        SELECT MAX(f.Arrival_datetime)
          INTO v_last_flight_end
@@ -131,16 +233,42 @@ CREATE OR REPLACE PACKAGE BODY crew_management AS
               ON cma.Flight_id = f.Id
         WHERE cma.Crew_member_id = p_crew_id;
 
-       -- Je¿eli cokolwiek znaleŸliœmy
-       IF v_last_flight_end IS NOT NULL THEN
-          -- Czy wype³niamy minimaln¹ przerwê?
-          IF p_departure_time < v_last_flight_end + NUMTODSINTERVAL(c_min_rest_hours, 'HOUR') THEN
-             RETURN FALSE;
-          END IF;
+       ------------------------------------------------------------------------
+       -- 1) SprawdŸ, czy ostatnie loty (przerwa < 8h) trwa³y > 10h ³¹cznie
+       ------------------------------------------------------------------------
+       FOR flight_rec IN (
+           SELECT f.Departure_datetime, f.Arrival_datetime
+             FROM Flight_Table f
+             JOIN CrewMemberAvailability_Table cma
+                  ON cma.Flight_id = f.Id
+            WHERE cma.Crew_member_id = p_crew_id
+              AND f.Arrival_datetime >= SYSTIMESTAMP - INTERVAL '1' DAY
+            ORDER BY f.Departure_datetime DESC
+       ) LOOP
+           -- Jeœli przerwa miêdzy lotami jest wiêksza ni¿ 8h, przerwij pêtlê
+           IF v_last_flight_end IS NOT NULL AND 
+              flight_rec.Departure_datetime > v_last_flight_end + NUMTODSINTERVAL(8, 'HOUR') THEN
+              EXIT;
+           END IF;
+
+           -- Dodaj czas trwania lotu
+           v_temp_departure := flight_rec.Departure_datetime;
+           v_temp_arrival := flight_rec.Arrival_datetime;
+
+           v_recent_flight_hours := v_recent_flight_hours + 
+               EXTRACT(HOUR FROM (v_temp_arrival - v_temp_departure)) +
+               EXTRACT(MINUTE FROM (v_temp_arrival - v_temp_departure)) / 60;
+
+           -- Zaktualizuj czas ostatniego lotu
+           v_last_flight_end := v_temp_arrival;
+       END LOOP;
+
+       IF v_recent_flight_hours > 10 THEN
+           RETURN FALSE;
        END IF;
 
        ------------------------------------------------------------------------
-       -- 2) SprawdŸ, ile godzin za³ogant wylata³ w ci¹gu ostatnich 7 dni
+       -- 3) SprawdŸ, ile godzin za³ogant wylata³ w ci¹gu ostatnich 7 dni
        ------------------------------------------------------------------------
        SELECT NVL(SUM(
                 EXTRACT(HOUR FROM (f.Arrival_datetime - f.Departure_datetime)) +
@@ -153,140 +281,28 @@ CREATE OR REPLACE PACKAGE BODY crew_management AS
         WHERE cma.Crew_member_id = p_crew_id
           AND f.Departure_datetime >= SYSTIMESTAMP - INTERVAL '7' DAY;
 
-       -- Oszacuj liczbê godzin w locie, który chcemy dodaæ
-       DECLARE
-         v_new_flight_hours NUMBER;
-       BEGIN
-         v_new_flight_hours := EXTRACT(HOUR FROM (p_arrival_time - p_departure_time))
-                               + EXTRACT(MINUTE FROM (p_arrival_time - p_departure_time)) / 60;
-
-         IF v_weekly_hours + v_new_flight_hours > c_max_flight_hours_per_week THEN
-             RETURN FALSE;
-         END IF;
-       END;
+       ------------------------------------------------------------------------
+       -- 4) SprawdŸ planowane przerwy w CrewMemberAvailability_Table
+       ------------------------------------------------------------------------
+       FOR availability_rec IN (
+           SELECT End_of_break
+             FROM CrewMemberAvailability_Table
+            WHERE Crew_member_id = p_crew_id
+              AND End_of_break > SYSTIMESTAMP
+       ) LOOP
+           IF p_departure_time < availability_rec.End_of_break THEN
+               RETURN FALSE;
+           END IF;
+       END LOOP;
 
        RETURN TRUE;
    EXCEPTION
        WHEN NO_DATA_FOUND THEN
-          -- Brak danych = za³ogant nie bra³ jeszcze udzia³u w ¿adnym locie -> jest dostêpny
-          RETURN TRUE;
+          RETURN TRUE; -- Brak danych oznacza dostêpnoœæ
    END is_crew_available;
 
    ----------------------------------------------------------------------------
-   -- Funkcja zwraca IATA lotniska, na którym za³ogant zakoñczy³ ostatni lot.
-   -- Jeœli brak danych, zwraca NULL.
-   ----------------------------------------------------------------------------
-   FUNCTION get_last_flight_airport (
-       p_crew_id IN NUMBER
-   ) RETURN CHAR 
-   IS
-       v_airport CHAR(3);
-   BEGIN
-       SELECT f.IATA_to
-         INTO v_airport
-         FROM Flight_Table f
-         JOIN CrewMemberAvailability_Table cma
-              ON cma.Flight_id = f.Id
-        WHERE cma.Crew_member_id = p_crew_id
-          AND f.Arrival_datetime = (
-              SELECT MAX(f2.Arrival_datetime)
-                FROM Flight_Table f2
-                JOIN CrewMemberAvailability_Table cma2
-                  ON cma2.Flight_id = f2.Id
-               WHERE cma2.Crew_member_id = p_crew_id
-          );
-
-       RETURN v_airport;
-   EXCEPTION
-       WHEN NO_DATA_FOUND THEN
-          RETURN NULL;
-   END get_last_flight_airport;
-
-   ----------------------------------------------------------------------------
-   -- Funkcja znajduje dostêpnych za³ogantów dla wszystkich wymaganych ról.
-   -- p_required_roles: to lista REF Role (zob. definicja RoleList).
-   -- Zwraca listê (crew_assignment_list), gdzie ka¿dy element ma:
-   --   crew_member_id, role_id
-   -- Uwaga: Logika "jedna osoba na jedn¹ rolê" – wychodzimy od roli i szukamy
-   --        pierwszego dostêpnego kandydata.
-   ----------------------------------------------------------------------------
-   FUNCTION find_available_crew (
-       p_departure_time     IN TIMESTAMP,
-       p_arrival_time       IN TIMESTAMP,
-       p_departure_airport  IN CHAR,
-       p_required_roles     IN RoleList
-   ) RETURN crew_assignment_list
-   IS
-       v_result           crew_assignment_list := crew_assignment_list();
-       v_crew_rec         crew_assignment_rec;
-   BEGIN
-       -- Dla ka¿dej wymaganej roli szukamy pierwszego dostêpnego za³oganta.
-       FOR i IN 1..p_required_roles.COUNT LOOP
-         DECLARE
-            l_role_obj ROLE;
-            v_role_id  NUMBER;
-          BEGIN
-            SELECT DEREF(p_required_roles(i))
-              INTO l_role_obj
-              FROM DUAL;
-        
-            v_role_id := l_role_obj.Id;
-           -- Przeszukaj kandydatów, którzy maj¹ tê rolê
-           FOR candidate IN (
-               SELECT c.Id AS crew_member_id,
-                      r.Id AS role_id
-                 FROM CrewMember_Table c
-                 CROSS JOIN TABLE(c.Roles_list) cr -- roles_list to jest RoleList
-                 JOIN Role_Table r ON r.Id = DEREF(cr.COLUMN_VALUE).Id
-                WHERE r.Id = v_role_id
-           ) LOOP
-               -- SprawdŸ dostêpnoœæ kandydata
-               IF is_crew_available(
-                     p_crew_id        => candidate.crew_member_id,
-                     p_departure_time => p_departure_time,
-                     p_arrival_time   => p_arrival_time
-                  )
-               THEN
-                  -- SprawdŸ czy jest na odpowiednim lotnisku (lub nigdzie nie lata³)
-                  DECLARE
-                    v_last_airport CHAR(3);
-                  BEGIN
-                    v_last_airport := get_last_flight_airport(candidate.crew_member_id);
-
-                    IF v_last_airport IS NULL 
-                       OR v_last_airport = p_departure_airport
-                    THEN
-                       -- Mamy kandydata
-                       v_crew_rec.crew_member_id := candidate.crew_member_id;
-                       v_crew_rec.role_id        := candidate.role_id;
-                       v_result.EXTEND;
-                       v_result(v_result.COUNT) := v_crew_rec;
-                       EXIT; -- Przestajemy szukaæ kandydata dla tej roli
-                    END IF;
-                  END;
-               END IF;
-           END LOOP;
-         END;
-       END LOOP;
-
-       -- Jeœli nie znaleziono pe³nej obsady, zwracamy NULL.
-       IF v_result.COUNT < p_required_roles.COUNT THEN
-         RETURN NULL;
-       END IF;
-
-       RETURN v_result;
-   END find_available_crew;
-
-   ----------------------------------------------------------------------------
-   -- Procedura, która:
-   -- 1) Odczytuje lot (m.in. plane_id, departure, arrival, sk¹d/dok¹d),
-   -- 2) Odczytuje z Plane_Table listê ról wymaganych (Required_role_list),
-   -- 3) find_available_crew(...) -> szuka za³ogi,
-   -- 4) Je¿eli znalaz³a siê pe³na obsada, to:
-   --      - dopisuje do CrewMemberAvailability_Table wiersze
-   --        (Crew_member_id, Flight_id, End_of_break itp.)
-   --      - aktualizuje Number_of_hours_in_air
-   -- 5) Je¿eli siê nie uda znaleŸæ za³ogi, rzuca b³¹d lub wypisuje komunikat.
+   -- Procedura przydzielaj¹ca za³ogê do lotu
    ----------------------------------------------------------------------------
    PROCEDURE assign_crew_to_flight (
        p_flight_id  IN NUMBER
@@ -297,6 +313,8 @@ CREATE OR REPLACE PACKAGE BODY crew_management AS
        v_required_roles  RoleList;
        v_assignments     crew_assignment_list;
        v_duration_hours  NUMBER;
+       v_end_of_break    TIMESTAMP;
+       v_recent_flights_count NUMBER := 0;
    BEGIN
        ----------------------------------------------------------------------------
        -- Krok 1: odczytaj obiekt Flight
@@ -357,8 +375,26 @@ CREATE OR REPLACE PACKAGE BODY crew_management AS
          v_flight_hours NUMBER := EXTRACT(HOUR FROM (v_flight.Arrival_datetime - v_flight.Departure_datetime))
                                 + EXTRACT(MINUTE FROM (v_flight.Arrival_datetime - v_flight.Departure_datetime))/60;
        BEGIN
+         -- Policzenie liczby ostatnich lotów poni¿ej 10h w ci¹gu dnia
+         SELECT COUNT(*)
+           INTO v_recent_flights_count
+           FROM Flight_Table f
+           JOIN CrewMemberAvailability_Table cma
+                ON cma.Flight_id = f.Id
+          WHERE cma.Crew_member_id = ANY (
+            SELECT crew_member_id FROM TABLE(v_assignments)
+          )
+            AND EXTRACT(HOUR FROM (f.Arrival_datetime - f.Departure_datetime)) < 10
+            AND f.Departure_datetime >= SYSTIMESTAMP - INTERVAL '1' DAY;
+
          FOR i IN 1..v_assignments.COUNT LOOP
-           -- 4a) Wstaw do CrewMemberAvailability_Table
+           -- 4a) Oblicz dynamiczny czas koñca przerwy na podstawie regu³
+           v_end_of_break := v_flight.Arrival_datetime + NUMTODSINTERVAL(
+               calculate_rest_period(v_flight_hours, v_recent_flights_count),
+               'HOUR'
+           );
+
+           -- 4b) Wstaw do CrewMemberAvailability_Table
            SELECT NVL(MAX(Id), 0) + 1 INTO v_new_id FROM CrewMemberAvailability_Table;
 
            INSERT INTO CrewMemberAvailability_Table VALUES(
@@ -366,13 +402,11 @@ CREATE OR REPLACE PACKAGE BODY crew_management AS
                v_new_id,
                v_assignments(i).crew_member_id,
                p_flight_id,
-               -- przyk³adowo: koniec przerwy to arrival + 12h; 
-               -- mo¿na tu zapisaæ coœ innego, w zale¿noœci od logiki
-               v_flight.Arrival_datetime + NUMTODSINTERVAL(c_min_rest_hours, 'HOUR')
+               v_end_of_break
              )
            );
 
-           -- 4b) Zwiêksz Number_of_hours_in_air
+           -- 4c) Zwiêksz Number_of_hours_in_air
            UPDATE CrewMember_Table
               SET Number_of_hours_in_air = Number_of_hours_in_air + v_flight_hours
             WHERE Id = v_assignments(i).crew_member_id;
@@ -388,4 +422,5 @@ CREATE OR REPLACE PACKAGE BODY crew_management AS
    END assign_crew_to_flight;
 
 END crew_management;
+
 /

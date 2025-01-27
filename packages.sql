@@ -8,6 +8,13 @@ CREATE OR REPLACE PACKAGE flight_management AS
         p_departure_time  IN TIMESTAMP,
         p_result          OUT BOOLEAN
     );
+    
+    FUNCTION check_technical_support (
+        p_IATA_code IN CHAR,
+        p_time      IN TIMESTAMP,
+        p_flight_id IN NUMBER
+    ) RETURN TIMESTAMP;
+    
     PROCEDURE create_new_flight (
         p_plane_id        IN NUMBER,
         p_departure_time  IN TIMESTAMP,
@@ -75,6 +82,9 @@ END flight_management;
 
 
 CREATE OR REPLACE PACKAGE BODY flight_management AS
+    ----------------------------------------------------------------------------
+    -- Procedura sprawdzaj¹ca, czy lot mo¿e byæ zaplanowany
+    ----------------------------------------------------------------------------
     PROCEDURE can_schedule_flight (
         p_IATA_code       IN CHAR,
         p_plane_id        IN NUMBER,
@@ -84,6 +94,7 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
         last_arrival_time    TIMESTAMP;
         next_available_time  TIMESTAMP;
         flight_count         NUMBER;
+        maintenance_start    TIMESTAMP;
     BEGIN
         -- Domyœlnie ustawiamy FALSE
         p_result := FALSE;
@@ -115,20 +126,76 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
                    AND f.IATA_to        = p_IATA_code
                    AND f.Arrival_datetime = last_arrival_time;
 
-                -- Pomyœlny wynik, jeœli samolot stoi na w³aœciwym lotnisku i min¹³ wystarczaj¹cy czas
-                p_result := (flight_count > 0);
+                IF flight_count > 0 THEN
+                    -- SprawdŸ dostêpnoœæ obs³ugi technicznej
+                    maintenance_start := check_technical_support(
+                        p_IATA_code => p_IATA_code,
+                        p_time      => last_arrival_time + INTERVAL '2' HOUR,
+                        p_flight_id => p_plane_id
+                    );
+
+                    IF maintenance_start <= p_departure_time THEN
+                        p_result := TRUE;
+                    ELSE
+                        p_result := FALSE;
+                    END IF;
+                END IF;
             END IF;
-
         END IF;
-
     EXCEPTION
         WHEN OTHERS THEN
             -- Na wszelki wypadek w razie innego b³êdu ustawiæ FALSE lub LOG
             p_result := FALSE;
     END can_schedule_flight;
 
+    ----------------------------------------------------------------------------
+    -- Funkcja sprawdzaj¹ca dostêpnoœæ obs³ugi technicznej
+    ----------------------------------------------------------------------------
+    FUNCTION check_technical_support (
+        p_IATA_code IN CHAR,
+        p_time      IN TIMESTAMP,
+        p_flight_id IN NUMBER
+    ) RETURN TIMESTAMP IS
+        v_shift_start TIMESTAMP;
+        v_shift_end   TIMESTAMP;
+        v_support_count NUMBER;
+        v_next_available TIMESTAMP := p_time;
+    BEGIN
+        -- Sprawdzamy, ilu cz³onków obs³ugi technicznej jest dostêpnych i nie s¹ ju¿ zajêci przy innych samolotach
+        SELECT COUNT(*)
+          INTO v_support_count
+          FROM TechnicalSupport_Table ts
+         WHERE ts.Airport_IATA = p_IATA_code
+           AND MOD(EXTRACT(HOUR FROM ts.Shift_start) + 24, 24) <= MOD(EXTRACT(HOUR FROM p_time) + 24, 24)
+           AND MOD(EXTRACT(HOUR FROM ts.Shift_end) + 24, 24) > MOD(EXTRACT(HOUR FROM p_time) + 24, 24)
+           AND ts.Id NOT IN (
+               SELECT COLUMN_VALUE
+                 FROM TABLE(
+                      SELECT f.Technical_support_after_arrival_ids
+                        FROM Flight_Table f
+                       WHERE f.Arrival_datetime <= p_time
+                         AND f.Arrival_datetime + INTERVAL '2' HOUR > p_time
+                         AND f.IATA_to = p_IATA_code
+                 )
+           );
 
-    
+        -- Jeœli dostêpnych jest przynajmniej 3 cz³onków obs³ugi, zwracamy czas rozpoczêcia maintenance
+        IF v_support_count >= 3 THEN
+            RETURN p_time;
+        ELSE
+            -- Znajdujemy najbli¿szy czas, kiedy bêdzie dostêpna obs³uga techniczna
+            SELECT MIN(ts.Shift_start)
+              INTO v_shift_start
+              FROM TechnicalSupport_Table ts
+             WHERE ts.Airport_IATA = p_IATA_code;
+
+            RETURN GREATEST(p_time, v_shift_start);
+        END IF;
+    END check_technical_support;
+
+    ----------------------------------------------------------------------------
+    -- Procedura tworz¹ca nowy lot
+    ----------------------------------------------------------------------------
     PROCEDURE create_new_flight(
        p_plane_id        IN NUMBER,
        p_departure_time  IN TIMESTAMP,
@@ -139,6 +206,7 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
        can_schedule BOOLEAN;
        v_new_flight_id NUMBER;
        V_CREW_COUNT NUMBER;
+       v_technical_support SYS.ODCINUMBERLIST := SYS.ODCINUMBERLIST();
    BEGIN
        can_schedule_flight(
            p_IATA_code      => p_IATA_from,
@@ -150,6 +218,14 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
        IF can_schedule THEN
            SELECT NVL(MAX(Id),0)+1 INTO v_new_flight_id FROM Flight_Table;
            
+           -- Pobierz dostêpnych cz³onków obs³ugi technicznej
+           SELECT ts.Id BULK COLLECT INTO v_technical_support
+           FROM TechnicalSupport_Table ts
+           WHERE ts.Airport_IATA = p_IATA_from
+             AND MOD(EXTRACT(HOUR FROM ts.Shift_start) + 24, 24) <= MOD(EXTRACT(HOUR FROM p_departure_time - INTERVAL '2' HOUR) + 24, 24)
+             AND MOD(EXTRACT(HOUR FROM ts.Shift_end) + 24, 24) > MOD(EXTRACT(HOUR FROM p_departure_time - INTERVAL '2' HOUR) + 24, 24)
+             AND ROWNUM <= 3; -- Wybierz trzech cz³onków
+
            INSERT INTO Flight_Table (
                Id,
                Plane_id,
@@ -159,7 +235,7 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
                IATA_to,
                Reservation_closing_datetime,
                List_taken_seats,
-               Role_to_crew_list
+               Technical_support_after_arrival_ids
            ) VALUES (
                v_new_flight_id,
                p_plane_id,
@@ -167,9 +243,9 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
                p_arrival_time,
                p_IATA_from,
                p_IATA_to,
-               p_departure_time - INTERVAL '1' DAY,
+               p_departure_time - INTERVAL '2' HOUR,
                PlaneSeatList(),
-               RoleList()  -- puste, bo w tym polu i tak mamy role, a nie crew
+               v_technical_support
            );
            DBMS_OUTPUT.PUT_LINE('Flight created: ID='||v_new_flight_id);
 
@@ -606,6 +682,13 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
       -- caretaker grouping result
       ----------------------------------------------------------------------------
       v_groups t_list_of_lists;
+      
+      l_rowcol  VARCHAR2(10);
+      l_sep     VARCHAR2(10);
+      l_row     NUMBER;
+      l_col     NUMBER;
+      v_requested_class REF TravelClass;
+      v_seat_class REF TravelClass;
    BEGIN
       ----------------------------------------------------------------------------
       -- Step 1) Check list lengths & no duplicates
@@ -665,7 +748,35 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
          v_requests(v_requests.COUNT).reservation_id := p_reservation_list(i);
          v_requests(v_requests.COUNT).seat_label     := p_seat_list(i);
       END LOOP;
-
+      ----------------------------------------------------------------------------
+    -- Step 3b) Validate travel class for each reservation
+    ----------------------------------------------------------------------------
+        FOR i IN 1..p_reservation_list.COUNT LOOP
+            -- Fetch the requested travel class for the reservation
+            SELECT Requested_Class
+            INTO v_requested_class
+            FROM Reservation_Table
+            WHERE Id = p_reservation_list(i);
+    
+            -- Parse seat row and column from label
+            l_rowcol := parse_seat_label(p_seat_list(i));
+            l_sep    := INSTR(l_rowcol, '|');
+            l_row    := TO_NUMBER(SUBSTR(l_rowcol, 1, l_sep - 1));
+            l_col    := TO_NUMBER(SUBSTR(l_rowcol, l_sep + 1));
+    
+            -- Fetch the travel class of the selected seat
+            SELECT TravelClassRef
+            INTO v_seat_class
+            FROM PlaneSeat_Table ps
+            WHERE ps.SeatRow = l_row AND ps.SeatColumn = l_col;
+    
+            -- Validate travel class
+            IF v_requested_class != v_seat_class THEN
+                DBMS_OUTPUT.PUT_LINE('Seat ' || p_seat_list(i) || ' does not match the requested travel class for reservation ' || p_reservation_list(i) || '. Aborting.');
+                RETURN;
+            END IF;
+        END LOOP;
+        
       ----------------------------------------------------------------------------
       -- Step 4) Invoke caretaker grouping
       ----------------------------------------------------------------------------

@@ -1,714 +1,146 @@
--------------------------------------------------------------------------------
--- Insert basic dictionary data (TravelClass, Role)
--------------------------------------------------------------------------------
-insert into travelclass_table values ( travelclass(
-   1,
-   'Economy',
-   'NajtaÅ„sza klasa, podstawowe udogodnienia'
-) );
-insert into travelclass_table values ( travelclass(
-   2,
-   'Premium',
-   'Lepsze siedzenia, dodatkowe usÅ‚ugi'
-) );
-insert into travelclass_table values ( travelclass(
-   3,
-   'Business',
-   'Wysoki komfort, szerokie fotele, priorytet'
-) );
+-- 1. Populate Role_Table
+INSERT INTO Role_Table VALUES (Role(1, 'Pilot'));
+INSERT INTO Role_Table VALUES (Role(2, 'Flight Attendant'));
+INSERT INTO Role_Table VALUES (Role(3, 'Engineer'));
 
-insert into role_table values ( role(
-   1,
-   'Pilot'
-) );
-insert into role_table values ( role(
-   2,
-   'CoPilot'
-) );
-insert into role_table values ( role(
-   3,
-   'Steward'
-) );
+-- 2. Populate TravelClass_Table
+INSERT INTO TravelClass_Table VALUES (TravelClass(1, 'Economy', 'Standard class with basic amenities.'));
+INSERT INTO TravelClass_Table VALUES (TravelClass(2, 'Business', 'Premium class with additional amenities.'));
+INSERT INTO TravelClass_Table VALUES (TravelClass(3, 'First Class', 'Luxury class with exclusive services.'));
 
--------------------------------------------------------------------------------
--- Insert Airports and TechnicalSupport
--------------------------------------------------------------------------------
-insert into airport_table values ( airport(
-   'WAW',
-   'Warsaw Chopin Airport',
-   'Warszawa, Polska',
-   technicalsupportlist()
-) );
-
-insert into airport_table values ( airport(
-   'KRK',
-   'Krakow Airport',
-   'Kraków, Polska',
-   technicalsupportlist()
-) );
-
-insert into airport_table values ( airport(
-   'GDN',
-   'Gdansk Lech Walesa Airport',
-   'Gdañsk, Polska',
-   technicalsupportlist()
-) );
-
-insert into airport_table values ( airport(
-   'WRO',
-   'Copernicus Airport Wroclaw',
-   'Wroc³aw, Polska',
-   technicalsupportlist()
-) );
-
-insert into airport_table values ( airport(
-   'KTW',
-   'Katowice Airport',
-   'Katowice, Polska',
-   technicalsupportlist()
-) );
-
-insert into airport_table values ( airport(
-   'POZ',
-   'Poznan Lawica Airport',
-   'Poznañ, Polska',
-   technicalsupportlist()
-) );
-
-
-----------------------
--- Technical Support Staff
-----------------------
--- Warsaw Chopin Airport (WAW)
-insert into technicalsupport_table values ( technicalsupport(
-   1, 'Jan Kowalski', 'Electronics', timestamp '2025-01-20 06:00:00', timestamp '2025-01-20 14:00:00', 'WAW'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   2, 'Anna Nowak', 'Engines', timestamp '2025-01-20 14:00:00', timestamp '2025-01-20 22:00:00', 'WAW'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   3, 'Piotr Zielinski', 'Hydraulics', timestamp '2025-01-21 06:00:00', timestamp '2025-01-21 14:00:00', 'WAW'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   4, 'Maria Lewandowska', 'Avionics', timestamp '2025-01-21 14:00:00', timestamp '2025-01-21 22:00:00', 'WAW'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   5, 'Tomasz Wojcik', 'Fuel Systems', timestamp '2025-01-22 06:00:00', timestamp '2025-01-22 14:00:00', 'WAW'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   6, 'Ewa Kaczmarek', 'Airframe Maintenance', timestamp '2025-01-22 14:00:00', timestamp '2025-01-22 22:00:00', 'WAW'
-) );
-
--- Krakow Airport (KRK)
-insert into technicalsupport_table values ( technicalsupport(
-   7, 'Jakub Szymanski', 'Electronics', timestamp '2025-01-20 06:00:00', timestamp '2025-01-20 14:00:00', 'KRK'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   8, 'Agnieszka Wrobel', 'Engines', timestamp '2025-01-20 14:00:00', timestamp '2025-01-20 22:00:00', 'KRK'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   9, 'Krzysztof Nowicki', 'Hydraulics', timestamp '2025-01-21 06:00:00', timestamp '2025-01-21 14:00:00', 'KRK'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   10, 'Zofia Wisniewska', 'Avionics', timestamp '2025-01-21 14:00:00', timestamp '2025-01-21 22:00:00', 'KRK'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   11, 'Marek D¹browski', 'Fuel Systems', timestamp '2025-01-22 06:00:00', timestamp '2025-01-22 14:00:00', 'KRK'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   12, 'Katarzyna Adamczyk', 'Airframe Maintenance', timestamp '2025-01-22 14:00:00', timestamp '2025-01-22 22:00:00', 'KRK'
-) );
-
--- Gdansk Airport (GDN)
-insert into technicalsupport_table values ( technicalsupport(
-   13, 'Andrzej Pawlak', 'Electronics', timestamp '2025-01-20 06:00:00', timestamp '2025-01-20 14:00:00', 'GDN'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   14, 'Barbara Michalska', 'Engines', timestamp '2025-01-20 14:00:00', timestamp '2025-01-20 22:00:00', 'GDN'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   15, 'Grzegorz Majewski', 'Hydraulics', timestamp '2025-01-21 06:00:00', timestamp '2025-01-21 14:00:00', 'GDN'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   16, 'Magdalena Sobczak', 'Avionics', timestamp '2025-01-21 14:00:00', timestamp '2025-01-21 22:00:00', 'GDN'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   17, 'Rafal Wojciechowski', 'Fuel Systems', timestamp '2025-01-22 06:00:00', timestamp '2025-01-22 14:00:00', 'GDN'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   18, 'Izabela Walczak', 'Airframe Maintenance', timestamp '2025-01-22 14:00:00', timestamp '2025-01-22 22:00:00', 'GDN'
-) );
-
--- Wroclaw Airport (WRO)
-insert into technicalsupport_table values ( technicalsupport(
-   19, 'Lukasz Kwiatkowski', 'Electronics', timestamp '2025-01-20 06:00:00', timestamp '2025-01-20 14:00:00', 'WRO'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   20, 'Joanna Lis', 'Engines', timestamp '2025-01-20 14:00:00', timestamp '2025-01-20 22:00:00', 'WRO'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   21, 'Maciej Zalewski', 'Hydraulics', timestamp '2025-01-21 06:00:00', timestamp '2025-01-21 14:00:00', 'WRO'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   22, 'Pawel Kozlowski', 'Avionics', timestamp '2025-01-21 14:00:00', timestamp '2025-01-21 22:00:00', 'WRO'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   23, 'Natalia Gorska', 'Fuel Systems', timestamp '2025-01-22 06:00:00', timestamp '2025-01-22 14:00:00', 'WRO'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   24, 'Michal Sobolewski', 'Airframe Maintenance', timestamp '2025-01-22 14:00:00', timestamp '2025-01-22 22:00:00', 'WRO'
-) );
-
--- Katowice Airport (KTW)
-insert into technicalsupport_table values ( technicalsupport(
-   25, 'Karolina Olszewska', 'Electronics', timestamp '2025-01-20 06:00:00', timestamp '2025-01-20 14:00:00', 'KTW'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   26, 'Damian Pawlak', 'Engines', timestamp '2025-01-20 14:00:00', timestamp '2025-01-20 22:00:00', 'KTW'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   27, 'Alicja Tomaszewska', 'Hydraulics', timestamp '2025-01-21 06:00:00', timestamp '2025-01-21 14:00:00', 'KTW'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   28, 'Jacek Kruk', 'Avionics', timestamp '2025-01-21 14:00:00', timestamp '2025-01-21 22:00:00', 'KTW'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   29, 'Marta Zajac', 'Fuel Systems', timestamp '2025-01-22 06:00:00', timestamp '2025-01-22 14:00:00', 'KTW'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   30, 'Wiktor Polak', 'Airframe Maintenance', timestamp '2025-01-22 14:00:00', timestamp '2025-01-22 22:00:00', 'KTW'
-) );
-
--- Poznan Airport (POZ)
-insert into technicalsupport_table values ( technicalsupport(
-   31, 'Marcin Borowski', 'Electronics', timestamp '2025-01-20 06:00:00', timestamp '2025-01-20 14:00:00', 'POZ'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   32, 'Sylwia Zawadzka', 'Engines', timestamp '2025-01-20 14:00:00', timestamp '2025-01-20 22:00:00', 'POZ'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   33, 'Tadeusz Konieczny', 'Hydraulics', timestamp '2025-01-21 06:00:00', timestamp '2025-01-21 14:00:00', 'POZ'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   34, 'Magda Urbanska', 'Avionics', timestamp '2025-01-21 14:00:00', timestamp '2025-01-21 22:00:00', 'POZ'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   35, 'Radoslaw Czerwinski', 'Fuel Systems', timestamp '2025-01-22 06:00:00', timestamp '2025-01-22 14:00:00', 'POZ'
-) );
-insert into technicalsupport_table values ( technicalsupport(
-   36, 'Iwona Lesniak', 'Airframe Maintenance', timestamp '2025-01-22 14:00:00', timestamp '2025-01-22 22:00:00', 'POZ'
-) );
-
-
--------------------------------------------------------------------------------
--- Insert Plane Seats
--------------------------------------------------------------------------------
-declare
-   v_economy  ref travelclass;
-   v_premium  ref travelclass;
-   v_business ref travelclass;
-begin
-   select ref(t)
-     into v_economy
-     from travelclass_table t
-    where t.id = 1;
-   select ref(t)
-     into v_premium
-     from travelclass_table t
-    where t.id = 2;
-   select ref(t)
-     into v_business
-     from travelclass_table t
-    where t.id = 3;
-
-   -- Seats for Plane 1 (Small)
-   insert into planeseat_table values ( planeseat(
-      1,
-      1,
-      1,
-      v_economy,
-      100.0
-   ) );
-   insert into planeseat_table values ( planeseat(
-      2,
-      1,
-      2,
-      v_economy,
-      100.0
-   ) );
-   insert into planeseat_table values ( planeseat(
-      3,
-      2,
-      1,
-      v_premium,
-      150.0
-   ) );
-   insert into planeseat_table values ( planeseat(
-      4,
-      2,
-      2,
-      v_business,
-      200.0
-   ) );
-
-   -- Seats for Plane 2 (Large)
-   insert into planeseat_table values ( planeseat(
-      5,
-      1,
-      1,
-      v_economy,
-      200.0
-   ) );
-   insert into planeseat_table values ( planeseat(
-      6,
-      1,
-      2,
-      v_economy,
-      200.0
-   ) );
-   insert into planeseat_table values ( planeseat(
-      7,
-      2,
-      1,
-      v_economy,
-      200.0
-   ) );
-   insert into planeseat_table values ( planeseat(
-      8,
-      2,
-      2,
-      v_premium,
-      280.0
-   ) );
-   insert into planeseat_table values ( planeseat(
-      9,
-      3,
-      1,
-      v_business,
-      350.0
-   ) );
-end;
-/
-
--------------------------------------------------------------------------------
--- Insert Crew Members
--------------------------------------------------------------------------------
-insert into crewmember_table values ( crewmember(
-   1,
-   'Adam',
-   'Pilot',
-   date '1985-06-10',
-   'adam.pilot@airline.com',
-   '123456789',
-   'AB1234567',
-   rolelist(),
-   3000.0
-) );
-
-insert into crewmember_table values ( crewmember(
-   2,
-   'Ewa',
-   'CoPilot',
-   date '1990-03-15',
-   'ewa.copilot@airline.com',
-   '987654321',
-   'CD7654321',
-   rolelist(),
-   1500.0
-) );
-
--------------------------------------------------------------------------------
--- Assign Roles to Crew Members
--------------------------------------------------------------------------------
-declare
-   v_pilot   ref role;
-   v_copilot ref role;
-begin
-   select ref(r)
-     into v_pilot
-     from role_table r
-    where r.role_name = 'Pilot';
-   select ref(r)
-     into v_copilot
-     from role_table r
-    where r.role_name = 'CoPilot';
-
-   update crewmember_table c
-      set
-      c.roles_list = rolelist(v_pilot)
-    where c.id = 1;
-   update crewmember_table c
-      set
-      c.roles_list = rolelist(v_copilot)
-    where c.id = 2;
-end;
-/
-
--------------------------------------------------------------------------------
--- Insert Planes with Seats and Required Roles
--------------------------------------------------------------------------------
-declare
-   v_seats_small  planeseatlist := planeseatlist();
-   v_seats_big    planeseatlist := planeseatlist();
-   v_role_pilot   ref role;
-   v_role_copilot ref role;
-begin
-   select ref(r)
-     into v_role_pilot
-     from role_table r
-    where r.role_name = 'Pilot';
-   select ref(r)
-     into v_role_copilot
-     from role_table r
-    where r.role_name = 'CoPilot';
-
-   -- Plane 1 Seats
-   for seat_ref in (
-      select ref(ps) as r
-        from planeseat_table ps
-       where ps.id between 1 and 4
-   ) loop
-      v_seats_small.extend(1);
-      v_seats_small(v_seats_small.count) := seat_ref.r;
-   end loop;
-
-   -- Plane 2 Seats
-   for seat_ref in (
-      select ref(ps) as r
-        from planeseat_table ps
-       where ps.id between 5 and 9
-   ) loop
-      v_seats_big.extend(1);
-      v_seats_big(v_seats_big.count) := seat_ref.r;
-   end loop;
-
-   -- Insert Planes
-   insert into plane_table values ( plane(
-      1,
-      v_seats_small,
-      rolelist(
-         v_role_pilot,
-         v_role_copilot
-      )
-   ) );
-   insert into plane_table values ( plane(
-      2,
-      v_seats_big,
-      rolelist(
-         v_role_pilot,
-         v_role_copilot
-      )
-   ) );
-end;
-/
-
--------------------------------------------------------------------------------
--- Insert Passengers
--------------------------------------------------------------------------------
-insert into passenger_table values ( passenger(
-   1,
-   'Piotr',
-   'Nowak',
-   date '2000-01-01',
-   'piotr.nowak@mail.com',
-   '123456789',
-   'PAS123',
-   null
-) );
-
-insert into passenger_table values ( passenger(
-   2,
-   'Anna',
-   'Kowalska',
-   date '1995-12-25',
-   'anna.kowalska@mail.com',
-   '987654321',
-   'PAS456',
-   null
-) );
-
-insert into passenger_table values ( passenger(
-   3,
-   'Dorosly',
-   'Czlowiek',
-   date '1995-12-25',
-   'dc@mail.com',
-   '981234321',
-   'PAS123123',
-   null
-) );
-
-insert into passenger_table values ( passenger(
-   4,
-   'Male',
-   'Dziecko',
-   date '1995-12-25',
-   'md@mail.com',
-   '981234321',
-   'PAS45612321',
-   3
-) );
-
-commit;
-
--------------------------------------------------------------------------------
--- Insert Flights
--------------------------------------------------------------------------------
-declare
-   v_seats_taken planeseatlist := planeseatlist();
-begin
-   insert into flight_table values ( flight(
-      1,
-      1,
-      timestamp '2025-02-01 09:00:00',
-      timestamp '2025-02-01 11:00:00',
-      'WAW',
-      'KRK',
-      timestamp '2025-01-31 23:59:00',
-      v_seats_taken,
-      rolelist()
-   ) );
-
-   insert into flight_table values ( flight(
-      2,
-      2,
-      timestamp '2025-02-02 14:00:00',
-      timestamp '2025-02-02 17:00:00',
-      'KRK',
-      'WAW',
-      timestamp '2025-02-01 23:59:00',
-      v_seats_taken,
-      rolelist()
-   ) );
-
-   commit;
-end;
-/
-
--------------------------------------------------------------------------------
--- Insert Reservations
--------------------------------------------------------------------------------
-insert into reservation_table values ( reservation(
-   1,
-   1,
-   1,
-   (
-      select ref(t)
-        from travelclass_table t
-       where t.id = 1
-   ),
-   null
-) );
-
-insert into reservation_table values ( reservation(
-   2,
-   1,
-   2,
-   (
-      select ref(t)
-        from travelclass_table t
-       where t.id = 2
-   ),
-   null
-) );
-
-insert into reservation_table values ( reservation(
-   3,
-   2,
-   1,
-   (
-      select ref(t)
-        from travelclass_table t
-       where t.id = 1
-   ),
-   null
-) );
-
-insert into reservation_table values ( reservation(
-   4,
-   2,
-   2,
-   (
-      select ref(t)
-        from travelclass_table t
-       where t.id = 3
-   ),
-   null
-) );
-
-----------------
--- Planes techncail support
-----------------
-
+-- 3. Create Plane and Populate PlaneSeatList
 DECLARE
-   v_tech_list technicalsupportlist := technicalsupportlist();
-   v_ref       REF technicalsupport;
-
-   -- Define a collection to store airport codes
-   TYPE airport_list IS TABLE OF VARCHAR2(3);
-   v_airports airport_list := airport_list('WAW', 'KRK', 'GDN', 'WRO', 'KTW', 'POZ');
+    v_required_roles RoleList := RoleList();
+    v_seat_list PlaneSeatList := PlaneSeatList();
+    v_travel_class_ref REF TravelClass;
+    v_seat_ref REF PlaneSeat;
 BEGIN
-   -- Iterate through the list of airports
-   FOR i IN 1..v_airports.COUNT LOOP
-      v_tech_list := technicalsupportlist();
-      
-      -- Collect references to technical support staff for the current airport
-      FOR rec IN (
-         SELECT REF(ts) AS ref_tech
-         FROM technicalsupport_table ts
-         WHERE ts.Airport_IATA = v_airports(i)
-      ) LOOP
-         v_tech_list.EXTEND;
-         v_tech_list(v_tech_list.COUNT) := rec.ref_tech;
-      END LOOP;
+    -- Define Required Roles for Plane
+    SELECT REF(r) BULK COLLECT INTO v_required_roles
+      FROM Role_Table r
+     WHERE r.Id IN (1, 2, 3); -- Pilot, Flight Attendant, Engineer
 
-      -- Update the airport table with the technical support list
-      UPDATE airport_table
-      SET technical_support_list = v_tech_list
-      WHERE IATA = v_airports(i);
-   END LOOP;
+    -- Fetch the reference for Economy Class
+    SELECT REF(tc)
+      INTO v_travel_class_ref
+      FROM TravelClass_Table tc
+     WHERE tc.Id = 1;
 
-   COMMIT;
+    -- Insert PlaneSeats into PlaneSeat_Table and Populate Seat List
+    FOR row_num IN 1..4 LOOP
+        FOR col_num IN 1..5 LOOP
+            -- Insert the PlaneSeat object into PlaneSeat_Table
+            INSERT INTO PlaneSeat_Table VALUES (
+                PlaneSeat(
+                    Id              => row_num * 10 + col_num,
+                    SeatRow         => row_num,
+                    SeatColumn      => col_num,
+                    TravelClassRef  => v_travel_class_ref,
+                    Price           => 100.0
+                )
+            );
+
+            -- Fetch the REF for the inserted PlaneSeat
+            SELECT REF(ps)
+              INTO v_seat_ref
+              FROM PlaneSeat_Table ps
+             WHERE ps.Id = row_num * 10 + col_num;
+
+            -- Add the REF PlaneSeat to the Seat List
+            v_seat_list.EXTEND;
+            v_seat_list(v_seat_list.COUNT) := v_seat_ref;
+        END LOOP;
+    END LOOP;
+
+    -- Insert the Plane into Plane_Table
+    INSERT INTO Plane_Table VALUES (
+        Plane(Id => 1, 
+              Seat_list => v_seat_list, 
+              Required_role_list => v_required_roles)
+    );
+
+    DBMS_OUTPUT.PUT_LINE('Plane and seats created successfully.');
 END;
 /
 
-----------------
--- More flights
-----------------
+-- 4. Populate Airport_Table
+INSERT INTO Airport_Table VALUES (
+    Airport('JFK', 'John F. Kennedy International Airport', 'New York, USA', TechnicalSupportList())
+);
+INSERT INTO Airport_Table VALUES (
+    Airport('LAX', 'Los Angeles International Airport', 'Los Angeles, USA', TechnicalSupportList())
+);
+INSERT INTO Airport_Table VALUES (
+    Airport('ORD', 'Chicago Hare International Airport', 'Chicago, USA', TechnicalSupportList())
+);
+
+-- 5. Populate CrewMember_Table
 DECLARE
-   v_seats_taken planeseatlist := planeseatlist();
+    v_roles RoleList := RoleList();
 BEGIN
-   -- Plane 1: From KRK to GDN
-   insert into flight_table values ( flight(
-      3,
-      1, -- Plane 1
-      timestamp '2025-02-01 15:00:00', -- Departure
-      timestamp '2025-02-01 17:00:00', -- Arrival
-      'KRK', -- From
-      'GDN', -- To
-      timestamp '2025-01-31 23:59:00', -- Reservation Closing
-      v_seats_taken,
-      rolelist()
-   ) );
+    -- Add Pilot 1
+    SELECT REF(r) BULK COLLECT INTO v_roles FROM Role_Table r WHERE r.Id = 1;
+    INSERT INTO CrewMember_Table VALUES (
+        CrewMember(1, 'John', 'Doe', DATE '1985-01-01', 'john.doe@example.com', '123456789', 'P12345', v_roles, 0)
+    );
 
-   -- Plane 1: From GDN to WAW
-   insert into flight_table values ( flight(
-      4,
-      1, -- Plane 1
-      timestamp '2025-02-01 20:00:00', -- Departure
-      timestamp '2025-02-01 22:00:00', -- Arrival
-      'GDN', -- From
-      'WAW', -- To
-      timestamp '2025-02-01 15:59:00', -- Reservation Closing
-      v_seats_taken,
-      rolelist()
-   ) );
+    -- Add Pilot 2
+    SELECT REF(r) BULK COLLECT INTO v_roles FROM Role_Table r WHERE r.Id = 1;
+    INSERT INTO CrewMember_Table VALUES (
+        CrewMember(2, 'Jane', 'Smith', DATE '1990-02-01', 'jane.smith@example.com', '987654321', 'P98765', v_roles, 0)
+    );
 
-   -- Plane 2: From WAW to KTW
-   insert into flight_table values ( flight(
-      5,
-      2, -- Plane 2
-      timestamp '2025-02-02 20:00:00', -- Departure
-      timestamp '2025-02-02 21:30:00', -- Arrival
-      'WAW', -- From
-      'KTW', -- To
-      timestamp '2025-02-02 19:00:00', -- Reservation Closing
-      v_seats_taken,
-      rolelist()
-   ) );
+    -- Add Flight Attendant 1
+    SELECT REF(r) BULK COLLECT INTO v_roles FROM Role_Table r WHERE r.Id = 2;
+    INSERT INTO CrewMember_Table VALUES (
+        CrewMember(3, 'Emily', 'Johnson', DATE '1995-03-01', 'emily.johnson@example.com', '123123123', 'F12345', v_roles, 0)
+    );
 
-   -- Plane 2: From KTW to WRO
-   insert into flight_table values ( flight(
-      6,
-      2, -- Plane 2
-      timestamp '2025-02-03 09:00:00', -- Departure
-      timestamp '2025-02-03 10:30:00', -- Arrival
-      'KTW', -- From
-      'WRO', -- To
-      timestamp '2025-02-03 08:00:00', -- Reservation Closing
-      v_seats_taken,
-      rolelist()
-   ) );
+    -- Add Flight Attendant 2
+    SELECT REF(r) BULK COLLECT INTO v_roles FROM Role_Table r WHERE r.Id = 2;
+    INSERT INTO CrewMember_Table VALUES (
+        CrewMember(4, 'Michael', 'Brown', DATE '1992-04-01', 'michael.brown@example.com', '456456456', 'F98765', v_roles, 0)
+    );
 
-   -- Plane 1: From WAW to POZ
-   insert into flight_table values ( flight(
-      7,
-      1, -- Plane 1
-      timestamp '2025-02-02 08:00:00', -- Departure
-      timestamp '2025-02-02 09:30:00', -- Arrival
-      'WAW', -- From
-      'POZ', -- To
-      timestamp '2025-02-01 23:59:00', -- Reservation Closing
-      v_seats_taken,
-      rolelist()
-   ) );
-
-   COMMIT;
+    -- Add Engineer
+    SELECT REF(r) BULK COLLECT INTO v_roles FROM Role_Table r WHERE r.Id = 3;
+    INSERT INTO CrewMember_Table VALUES (
+        CrewMember(5, 'Robert', 'Taylor', DATE '1988-05-01', 'robert.taylor@example.com', '789789789', 'E12345', v_roles, 0)
+    );
 END;
 /
 
--- Insert additional crew members
-insert into crewmember_table values ( crewmember(
-   3,
-   'Marek',
-   'Steward',
-   date '1992-08-20',
-   'marek.steward@airline.com',
-   '555123789',
-   'ST7654321',
-   rolelist(),
-   1200.0
-) );
+-- 6. Populate TechnicalSupport_Table
+DECLARE
+    v_airports SYS.ODCIVARCHAR2LIST := SYS.ODCIVARCHAR2LIST('JFK', 'LAX', 'ORD');
+    v_shift_start TIMESTAMP;
+    v_shift_end TIMESTAMP;
+    v_new_id NUMBER;
+BEGIN
+    FOR i IN 1..v_airports.COUNT LOOP
+        -- Dodanie 3 cz³onków obs³ugi technicznej na ka¿d¹ zmianê dla ka¿dego lotniska
+        FOR shift_number IN 1..3 LOOP
+            -- Ustawienia zmian (8-godzinne zmiany: 00:00-08:00, 08:00-16:00, 16:00-00:00)
+            v_shift_start := TRUNC(SYSDATE) + INTERVAL '8' HOUR * (shift_number - 1);
+            v_shift_end := TRUNC(SYSDATE) + INTERVAL '8' HOUR * shift_number;
 
-insert into crewmember_table values ( crewmember(
-   4,
-   'Anna',
-   'Pilot',
-   date '1988-04-15',
-   'anna.pilot@airline.com',
-   '555987654',
-   'PL9876543',
-   rolelist(),
-   2800.0
-) );
+            -- Wygenerowanie nowego ID
+            SELECT NVL(MAX(Id), 0) + 1 INTO v_new_id FROM TechnicalSupport_Table;
 
-insert into crewmember_table values ( crewmember(
-   5,
-   'Jan',
-   'CoPilot',
-   date '1991-11-30',
-   'jan.copilot@airline.com',
-   '555456789',
-   'CP4567890',
-   rolelist(),
-   1800.0
-) );
+            -- Wstawienie danych do tabeli
+            INSERT INTO TechnicalSupport_Table VALUES (
+                v_new_id,
+                'TechSupport_' || v_airports(i) || '_' || shift_number,
+                '',
+                v_shift_start,
+                v_shift_end,
+                v_airports(i) -- Przypisanie do konkretnego lotniska
+            );
+        END LOOP;
+    END LOOP;
 
--- Assign roles to new crew members
-declare
-   v_pilot   ref role;
-   v_copilot ref role;
-   v_steward ref role;
-begin
-   select ref(r) into v_pilot from role_table r where r.role_name = 'Pilot';
-   select ref(r) into v_copilot from role_table r where r.role_name = 'CoPilot';
-   select ref(r) into v_steward from role_table r where r.role_name = 'Steward';
-
-   update crewmember_table c set c.roles_list = rolelist(v_steward) where c.id = 3;
-   update crewmember_table c set c.roles_list = rolelist(v_pilot) where c.id = 4;
-   update crewmember_table c set c.roles_list = rolelist(v_copilot) where c.id = 5;
-end;
+    DBMS_OUTPUT.PUT_LINE('Technical support data populated successfully.');
+END;
 /
 
--- Insert crew availability data
-insert into crewmemberavailability_table values ( crewmemberavailability(
-   1, 1, 1, timestamp '2025-02-01 13:00:00'
-) );
 
-insert into crewmemberavailability_table values ( crewmemberavailability(
-   2, 2, 1, timestamp '2025-02-01 13:00:00'
-) );
-
-insert into crewmemberavailability_table values ( crewmemberavailability(
-   3, 3, 1, timestamp '2025-02-01 13:00:00'
-) );

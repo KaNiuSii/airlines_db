@@ -239,13 +239,12 @@ CREATE OR REPLACE TYPE Flight AS OBJECT (
     IATA_to                  CHAR(3),
     Reservation_closing_datetime TIMESTAMP,
     List_taken_seats         PlaneSeatList,
-    Role_to_crew_list        RoleList
+    Technical_support_after_arrival_ids SYS.ODCINUMBERLIST
 );
 /
 
 CREATE TABLE Flight_Table OF Flight
-    NESTED TABLE List_taken_seats STORE AS Flight_Taken_Seats_Table,
-    NESTED TABLE Role_to_crew_list STORE AS Flight_Role_Crew_Table;
+    NESTED TABLE List_taken_seats STORE AS Flight_Taken_Seats_Table;
 /
 
 ALTER TABLE Flight_Table 
