@@ -1,6 +1,5 @@
--- Usuwanie istniej�cych obiekt�w
+-- Czyszczenie
 BEGIN
-  -- First, drop all parent tables
   FOR cur_rec IN (
     SELECT table_name AS object_name, 'TABLE' AS object_type 
     FROM user_tables
@@ -14,7 +13,6 @@ BEGIN
     END;
   END LOOP;
 
-  -- Next, drop remaining tables (nested tables)
   FOR cur_rec IN (
     SELECT table_name AS object_name, 'TABLE' AS object_type 
     FROM user_tables
@@ -28,7 +26,6 @@ BEGIN
     END;
   END LOOP;
 
-  -- Finally, drop all types
   FOR cur_rec IN (
     SELECT type_name AS object_name, 'TYPE' AS object_type 
     FROM user_types
@@ -65,9 +62,7 @@ BEGIN
   END LOOP;
 END;
 /
---------------------------------------------------------------------------------
--- Typ dla klasy podr�y
---------------------------------------------------------------------------------
+
 CREATE OR REPLACE TYPE TravelClass AS OBJECT (
     Id            INT,
     Class_Name    VARCHAR2(100),
@@ -82,9 +77,7 @@ ALTER TABLE TravelClass_Table
   ADD CONSTRAINT PK_TravelClass 
   PRIMARY KEY (Id);
 /
---------------------------------------------------------------------------------
--- Typ dla roli
---------------------------------------------------------------------------------
+
 CREATE OR REPLACE TYPE Role AS OBJECT (
     Id         INT,
     Role_name  VARCHAR2(100)
@@ -98,13 +91,7 @@ ALTER TABLE Role_Table
   ADD CONSTRAINT PK_Role 
   PRIMARY KEY (Id);
 /
---------------------------------------------------------------------------------
--- Typ dla miejsca w samolocie
---------------------------------------------------------------------------------
--- Zmieniamy nazwy atrybut�w:
---   Row   -> SeatRow
---   Column -> SeatColumn
---   Class -> TravelClassRef
+
 CREATE OR REPLACE TYPE PlaneSeat AS OBJECT (
     Id              INT,
     SeatRow         INT,
@@ -121,19 +108,13 @@ ALTER TABLE PlaneSeat_Table
   ADD CONSTRAINT PK_PlaneSeat 
   PRIMARY KEY (Id);
 /
---------------------------------------------------------------------------------
--- Typ kolekcji dla miejsc w samolocie
---------------------------------------------------------------------------------
+
 CREATE OR REPLACE TYPE PlaneSeatList AS TABLE OF REF PlaneSeat;
 /
---------------------------------------------------------------------------------
--- Typ kolekcji dla r�l
---------------------------------------------------------------------------------
+
 CREATE OR REPLACE TYPE RoleList AS TABLE OF REF Role;
 /
---------------------------------------------------------------------------------
--- Typ dla przypisania roli do cz�onka za�ogi
---------------------------------------------------------------------------------
+
 CREATE OR REPLACE TYPE RoleToCrew AS OBJECT (
     Crew_member_id  INT,
     Role_id         INT
@@ -147,9 +128,7 @@ ALTER TABLE RoleToCrew_Table
   ADD CONSTRAINT PK_RoleToCrew 
   PRIMARY KEY (Crew_member_id, Role_id);
 /
---------------------------------------------------------------------------------
--- Typ dla samolotu
---------------------------------------------------------------------------------
+
 CREATE OR REPLACE TYPE Plane AS OBJECT (
     Id                   INT,
     Seat_list            PlaneSeatList,
@@ -166,9 +145,7 @@ ALTER TABLE Plane_Table
   ADD CONSTRAINT PK_Plane 
   PRIMARY KEY (Id);
 /
---------------------------------------------------------------------------------
--- Typ dla cz�onka za�ogi
---------------------------------------------------------------------------------
+
 CREATE OR REPLACE TYPE CrewMember AS OBJECT (
     Id                   INT,
     First_name           VARCHAR2(100),
@@ -190,9 +167,7 @@ ALTER TABLE CrewMember_Table
   ADD CONSTRAINT PK_CrewMember 
   PRIMARY KEY (Id);
 /
---------------------------------------------------------------------------------
--- Typ dla dost�pno�ci cz�onka za�ogi
---------------------------------------------------------------------------------
+
 CREATE OR REPLACE TYPE CrewMemberAvailability AS OBJECT (
     Id             INT,
     Crew_member_id INT,
@@ -208,9 +183,7 @@ ALTER TABLE CrewMemberAvailability_Table
   ADD CONSTRAINT PK_CrewMemberAvailability 
   PRIMARY KEY (Id);
 /
---------------------------------------------------------------------------------
--- Typ dla rezerwacji
---------------------------------------------------------------------------------
+
 CREATE OR REPLACE TYPE Reservation AS OBJECT (
     Id              INT,
     Flight_id       INT,
@@ -227,9 +200,7 @@ ALTER TABLE Reservation_Table
   ADD CONSTRAINT PK_Reservation 
   PRIMARY KEY (Id);
 /
---------------------------------------------------------------------------------
--- Typ dla lotu
---------------------------------------------------------------------------------
+
 CREATE OR REPLACE TYPE Flight AS OBJECT (
     Id                       INT,
     Plane_id                 INT,
@@ -273,9 +244,7 @@ ALTER TABLE Passenger_Table
   ADD CONSTRAINT PK_Passenger 
   PRIMARY KEY (Id);
 /
---------------------------------------------------------------------------------
--- Typ dla wsparcia technicznego
---------------------------------------------------------------------------------
+
 CREATE OR REPLACE TYPE TechnicalSupport AS OBJECT (
     Id             INT,
     Name           VARCHAR2(100),
@@ -293,14 +262,10 @@ ALTER TABLE TechnicalSupport_Table
   ADD CONSTRAINT PK_TechnicalSupport 
   PRIMARY KEY (Id);
 /
---------------------------------------------------------------------------------
--- Typ kolekcji dla wsparcia technicznego
---------------------------------------------------------------------------------
+
 CREATE OR REPLACE TYPE TechnicalSupportList AS TABLE OF REF TechnicalSupport;
 /
---------------------------------------------------------------------------------
--- Typ dla lotniska
---------------------------------------------------------------------------------
+
 CREATE OR REPLACE TYPE Airport AS OBJECT (
     IATA                    CHAR(3),
     Name                    VARCHAR2(150),
