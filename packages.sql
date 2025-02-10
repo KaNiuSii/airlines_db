@@ -45,7 +45,7 @@ CREATE OR REPLACE PACKAGE flight_management AS
     ) RETURN BOOLEAN;
 
     /******************************************************************************
-     * 3) G³ówna procedura przypisywania miejsca
+     * 3) Procedura przypisywania miejsca
      *    - przyjmuje 1 rezerwacjê, 1 miejsce w danym locie
      ******************************************************************************/
     PROCEDURE assign_seat_for_reservation (
@@ -55,7 +55,7 @@ CREATE OR REPLACE PACKAGE flight_management AS
     );
 
     /******************************************************************************
-     * 4) Pozosta³e narzêdzia (pokaz miejsca, znalezienie wolnych miejsc, itp.)
+     * 4) Dodatkowe rzeczy
      ******************************************************************************/
     FUNCTION find_adjacent_seats (
         p_flight_id IN NUMBER,
@@ -72,7 +72,7 @@ END flight_management;
 CREATE OR REPLACE PACKAGE BODY flight_management AS
 
     /******************************************************************************
-     *                 Sekcja prywatna (helpery niewidoczne poza pakietem)
+     *                 Sekcja prywatna
      ******************************************************************************/
     -- Funkcja parse_seat_label: "12B" => (row=12, col=2) wewnêtrznie
     FUNCTION parse_seat_label (
@@ -129,7 +129,7 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
             -- Brak wczeœniejszych lotów -> mo¿na planowaæ pierwszy lot
             p_result := TRUE;
         ELSE
-            -- Sprawdzamy, czy planowany wylot > next_available_time
+            -- Sprawdzamy, czy czas planowanego wylotu > next_available_time
             IF next_available_time <= p_departure_time THEN
                 -- Czy samolot faktycznie wyl¹dowa³ na p_IATA_code?
                 SELECT COUNT(*)
@@ -169,7 +169,6 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
         v_support_count   NUMBER;
         v_shift_start     TIMESTAMP;
     BEGIN
-        -- Poni¿sze sprawdzenie to jedynie przyk³adowa logika
         SELECT COUNT(*)
           INTO v_support_count
           FROM TechnicalSupport_Table ts
@@ -225,7 +224,7 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
        IF can_schedule THEN
            SELECT NVL(MAX(Id),0)+1 INTO v_new_flight_id FROM Flight_Table;
            
-           -- Pobierz dostêpnych cz³onków wsparcia (przyk³ad: 3 osoby)
+           -- Pobierz dostêpnych cz³onków wsparcia
            SELECT ts.Id BULK COLLECT INTO v_technical_support
              FROM TechnicalSupport_Table ts
             WHERE ts.Airport_IATA = p_IATA_from
@@ -255,10 +254,6 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
                v_technical_support
            );
 
-           DBMS_OUTPUT.PUT_LINE('Flight created: ID='||v_new_flight_id);
-
-           -- Przyk³adowe przypisanie za³ogi (o ile masz paczkê crew_management):
-           -- Jeœli nie masz, usuñ ten fragment
            BEGIN
               crew_management.assign_crew_to_flight(v_new_flight_id);
               
@@ -274,6 +269,7 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
               ELSE
                  DBMS_OUTPUT.PUT_LINE('Crew assigned successfully for flight '||v_new_flight_id);
               END IF;
+              DBMS_OUTPUT.PUT_LINE('Flight created: ID='||v_new_flight_id);
            EXCEPTION
               WHEN OTHERS THEN
                  DBMS_OUTPUT.PUT_LINE('No crew_management logic found or other error. Flight remains.');
@@ -357,9 +353,7 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
     END seat_is_taken;
 
     /******************************************************************************
-     *                     6) caretaker_sits_next_to_child
-     *    Sprawdzamy, czy 2 etykiety siedzeñ s¹ w „s¹siednich” rzêdach
-     *    (wg definicji: ten sam nr kolumny, rz¹d ró¿ni siê o 1)
+     *              6) caretaker_sits_next_to_child
      ******************************************************************************/
     FUNCTION caretaker_sits_next_to_child (
         p_seat_label_carer  IN VARCHAR2,
@@ -386,11 +380,11 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
         r2    := TO_NUMBER(SUBSTR(l_c2,1,l_sep2-1));
         c2    := TO_NUMBER(SUBSTR(l_c2,l_sep2+1));
 
-        RETURN (c1 = c2) AND (ABS(r1 - r2) = 1);
+        RETURN (ABS(r1 - r2) <= 1) AND (ABS(c1 - c2) <= 1);
     END caretaker_sits_next_to_child;
 
     /******************************************************************************
-     * 7) G£ÓWNA NOWA PROCEDURA: assign_seat_for_reservation
+     * 7) PROCEDURA: assign_seat_for_reservation
      *    - Jedna rezerwacja, jedna etykieta siedzenia
      *    - Wymusza s¹siedztwo z opiekunem, jeœli pasa¿er jest dzieckiem
      ******************************************************************************/
@@ -592,11 +586,11 @@ CREATE OR REPLACE PACKAGE BODY flight_management AS
     EXCEPTION
         WHEN OTHERS THEN
             DBMS_OUTPUT.PUT_LINE('B³¹d w assign_seat_for_reservation: ' || SQLERRM);
-            RAISE;  -- mo¿esz zdecydowaæ, czy dalej rzucasz b³¹d, czy tylko log
+            RAISE; 
     END assign_seat_for_reservation;
 
     /******************************************************************************
-     * 8) find_adjacent_seats – przyk³adowa logika zwracania listy wolnych foteli
+     * 8) find_adjacent_seats
      ******************************************************************************/
     FUNCTION find_adjacent_seats (
         p_flight_id IN NUMBER,

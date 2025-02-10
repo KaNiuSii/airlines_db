@@ -1,12 +1,9 @@
 CREATE OR REPLACE PACKAGE crew_management AS
-   ----------------------------------------------------------------------------
-   -- Sta³e (konfiguracja / wartoœci domyœlne)
-   ----------------------------------------------------------------------------
    c_min_rest_hours             CONSTANT NUMBER := 12;  -- Minimalna przerwa miêdzy lotami
    c_max_flight_hours_per_week  CONSTANT NUMBER := 40;  -- Maksymalna liczba godzin w powietrzu/7 dni
 
    ----------------------------------------------------------------------------
-   -- Typy (rekordy, kolekcje)
+   -- Typy pomocnicze pakietu
    ----------------------------------------------------------------------------
    TYPE crew_assignment_rec IS RECORD (
        crew_member_id NUMBER,
@@ -33,8 +30,7 @@ CREATE OR REPLACE PACKAGE crew_management AS
    ----------------------------------------------------------------------------
    FUNCTION is_crew_available (
        p_crew_id         IN NUMBER,
-       p_departure_time  IN TIMESTAMP,
-       p_arrival_time    IN TIMESTAMP
+       p_departure_time  IN TIMESTAMP
    ) RETURN BOOLEAN;
 
    ----------------------------------------------------------------------------
@@ -57,7 +53,7 @@ CREATE OR REPLACE PACKAGE crew_management AS
    ) RETURN CHAR;
 
    ----------------------------------------------------------------------------
-   -- 5) G³ówna procedura przypisuj¹ca za³ogê do lotu:
+   -- 5) Procedura przypisuj¹ca za³ogê do lotu:
    --    - wywo³uje find_available_crew,
    --    - zapisuje dane do CrewMemberAvailability_Table,
    --    - aktualizuje Number_of_hours_in_air u za³ogantów.
@@ -73,7 +69,6 @@ CREATE OR REPLACE PACKAGE BODY crew_management AS
 
    ----------------------------------------------------------------------------
    --  FUNKCJA: wyliczenie dodatkowej przerwy (rest period) 
-   --           na podstawie godzin w powietrzu i liczby lotów
    ----------------------------------------------------------------------------
    FUNCTION calculate_rest_period (
        p_flight_hours         IN NUMBER,
@@ -82,7 +77,7 @@ CREATE OR REPLACE PACKAGE BODY crew_management AS
       RETURN NUMBER 
    IS
    BEGIN
-       -- Przyk³ad: jeœli za³ogant przekracza 10h lotu lub zrobi³ >=4 loty ostatnio,
+       -- Jeœli za³ogant przekracza 10h lotu lub zrobi³ >=4 loty ostatnio,
        -- to wymagamy pe³nych 12h przerwy, w przeciwnym wypadku 2h.
        IF p_flight_hours > 10 OR p_recent_flights_count >= 4 THEN
            RETURN 12;
@@ -176,8 +171,7 @@ CREATE OR REPLACE PACKAGE BODY crew_management AS
    ----------------------------------------------------------------------------
    FUNCTION is_crew_available (
        p_crew_id         IN NUMBER,
-       p_departure_time  IN TIMESTAMP,
-       p_arrival_time    IN TIMESTAMP
+       p_departure_time  IN TIMESTAMP
    ) 
       RETURN BOOLEAN 
    IS
@@ -199,7 +193,7 @@ CREATE OR REPLACE PACKAGE BODY crew_management AS
 
        ----------------------------------------------------------------------------
        -- 1) Przeanalizuj loty z ostatniej doby,
-       --    sprawdzaj¹c czas lotu i przerwy (<8h) -- warunkowo sumujemy
+       --    sprawdzaj¹c czas lotu i przerwy
        ----------------------------------------------------------------------------
        FOR flight_rec IN (
            SELECT f.Departure_datetime, f.Arrival_datetime
@@ -249,7 +243,7 @@ CREATE OR REPLACE PACKAGE BODY crew_management AS
         WHERE cma.Crew_member_id    = p_crew_id
           AND f.Departure_datetime >= SYSTIMESTAMP - INTERVAL '7' DAY;
 
-       -- Je¿eli przekracza c_max_flight_hours_per_week (np. 40h) => niedostêpny
+       -- Je¿eli przekracza c_max_flight_hours_per_week => niedostêpny
        IF v_weekly_hours >= c_max_flight_hours_per_week THEN
            RETURN FALSE;
        END IF;
@@ -320,8 +314,7 @@ CREATE OR REPLACE PACKAGE BODY crew_management AS
                    -- SprawdŸ dostêpnoœæ kandydata
                    IF is_crew_available(
                         p_crew_id        => candidate.crew_member_id,
-                        p_departure_time => p_departure_time,
-                        p_arrival_time   => p_arrival_time
+                        p_departure_time => p_departure_time
                    )
                    THEN
                        -- SprawdŸ, czy za³ogant jest w odpowiednim porcie (lub brak danych => brak ostatniego lotu)

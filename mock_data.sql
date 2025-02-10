@@ -28,7 +28,7 @@ BEGIN
       FROM Role_Table r
      WHERE r.Id IN (1, 2, 3); -- Pilot, Flight Attendant, Engineer
 
-    -- Za³ó¿my, ¿e dla uproszczenia *wszystkie* miejsca bêd¹ w klasie 'Economy' (Id=1)
+    -- Dla uproszczenia *wszystkie* miejsca bêd¹ w klasie 'Economy' (Id=1)
     SELECT REF(tc)
       INTO v_travel_class_ref
       FROM TravelClass_Table tc

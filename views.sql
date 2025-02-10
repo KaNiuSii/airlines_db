@@ -1,20 +1,18 @@
-select username,
-       osuser,
-       machine,
-       schemaname
-  from gv$session
- where sid = (
-   select sys_context(
-      'userenv',
-      'sid'
-   )
-     from dual
-);
-  
+--select username,
+--       osuser,
+--       machine,
+--       schemaname
+--  from gv$session
+-- where sid = (
+--   select sys_context(
+--      'userenv',
+--      'sid'
+--   )
+--     from dual
+--);
+--  
   --GRANT CREATE VIEW TO SCOOT;
--------------------------------------------------------------------------------
--- 1) Tworzenie widok�w
--------------------------------------------------------------------------------
+  
 create or replace view v_travelclass_stats as
    select t.class_name as class_name,
           count(*) as seat_count,
@@ -28,14 +26,6 @@ create or replace view v_travelclass_stats as
      join travelclass_table t
    on ps.travelclassref = ref(t)
     group by t.class_name;
-
-create or replace view v_plane_seatcount as
-   select p.id as plane_id,
-          (
-             select count(*)
-               from table ( p.seat_list )
-          ) as seat_count
-     from plane_table p;
 
 create or replace view v_plane_requiredroles as
    select p.id as plane_id,
@@ -55,15 +45,6 @@ create or replace view v_crewmember_rolecount as
                from table ( c.roles_list )
           ) as role_count
      from crewmember_table c;
-
-create or replace view v_airport_techsupport as
-   select a.iata as airport_iata,
-          a.name as airport_name,
-          (
-             select count(*)
-               from table ( a.technical_support_list )
-          ) as tech_support_count
-     from airport_table a;
 
 create or replace view v_flights_seatings as
    select f.id as flight_id,
@@ -91,23 +72,3 @@ LEFT JOIN
 GROUP BY 
     cm.crew_member_id, cm.last_iata, cm.available_datetime;
 
-
--------------------------------------------------------------------------------
--- 2) SELECT z utworzonych widok�w
--------------------------------------------------------------------------------
-select *
-  from v_travelclass_stats;
-select *
-  from v_plane_seatcount;
-select *
-  from v_plane_requiredroles;
-select *
-  from v_crewmember_rolecount;
-select *
-  from v_airport_techsupport;
-
-select *
-  from v_flights_seatings;
-
-select *
-  from reservation_table;

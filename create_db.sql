@@ -222,9 +222,7 @@ ALTER TABLE Flight_Table
   ADD CONSTRAINT PK_Flight 
   PRIMARY KEY (Id);
 /
---------------------------------------------------------------------------------
--- Typ dla pasa�era
---------------------------------------------------------------------------------
+
 CREATE OR REPLACE TYPE Passenger AS OBJECT (
     Id              INT,
     First_name      VARCHAR2(100),

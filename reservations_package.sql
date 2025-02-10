@@ -109,7 +109,7 @@ CREATE OR REPLACE PACKAGE BODY reservation_management AS
             RAISE_APPLICATION_ERROR(-20002, 'Passenger list cannot be empty.');
         END IF;
 
-        -- Pobierz REF do TravelClass (na podstawie ID)
+        -- Pobierz REF do TravelClass 
         SELECT REF(tc)
           INTO v_class_ref
           FROM TravelClass_Table tc
@@ -206,7 +206,7 @@ CREATE OR REPLACE PACKAGE BODY reservation_management AS
               FROM Reservation_Table r
              WHERE r.Flight_id = p_flight_id
                AND r.Seat IS NULL
-             ORDER BY r.Id;  -- mo¿na losowo, ale robimy rosn¹co
+             ORDER BY r.Id;
 
         TYPE t_unassigned IS RECORD (
             reservation_id NUMBER,
@@ -218,7 +218,7 @@ CREATE OR REPLACE PACKAGE BODY reservation_management AS
         v_plane_id NUMBER;
 
         ----------------------------------------------------------------------------
-        -- Funkcja pomocnicza do "losowego" wolnego miejsca w danej klasie
+        -- Funkcja pomocnicza do losowego wolnego miejsca w danej klasie
         ----------------------------------------------------------------------------
         FUNCTION get_random_seat(
             p_flight_id  IN NUMBER,
@@ -394,14 +394,8 @@ CREATE OR REPLACE PACKAGE BODY reservation_management AS
                             ----------------------------------------------------------------------------
                             -- (B1) Opiekun ma ju¿ miejsce => daj dziecku fotel obok
                             ----------------------------------------------------------------------------
-                            -- ZnajdŸ listê wolnych foteli obok parent_seat
-                            -- (w tym przyk³adzie definicja "obok" = ten sam col, rz¹d +/-1
-                            --  ale w "flight_management" jest caretaker_sits_next_to_child).
-                            -- Mo¿emy wyszukaæ wszystkie wolne fotele i sprawdziæ adjacency w PL/SQL
-                            --  lub wy³uskaæ z bazy. Tutaj zrobimy to "rêcznie":
 
                             DECLARE
-                                v_all_free_seats SYS.ODCIVARCHAR2LIST := SYS.ODCIVARCHAR2LIST();
                                 v_label VARCHAR2(10);
                             BEGIN
                                 -- Pobierz wszystkie wolne miejsca w danej klasie, w losowej kolejnoœci
@@ -444,7 +438,7 @@ CREATE OR REPLACE PACKAGE BODY reservation_management AS
 
                         ELSE
                             ----------------------------------------------------------------------------
-                            -- (B2) Opiekun te¿ nie ma miejsca => spróbujmy przydzieliæ
+                            -- (B2) Opiekun te¿ nie ma miejsca =>  przydzieliæ
                             --      *parê* losowych s¹siaduj¹cych foteli
                             ----------------------------------------------------------------------------
                             v_adj_pair := get_random_adjacent_seats(
@@ -463,9 +457,7 @@ CREATE OR REPLACE PACKAGE BODY reservation_management AS
                                    AND ROWNUM = 1;
                                  
                                 IF v_parent_res_id IS NOT NULL THEN
-                                    -- Przydziel w dowolnej kolejnoœci: (child, parent) vs (parent, child)
-                                    -- Lepiej tak, aby child, parent = v_adj_pair(1), v_adj_pair(2).
-                                    -- Zrób to przez assign_seat_for_reservation
+                                    -- Przydziel w dowolnej kolejnoœci
                                     flight_management.assign_seat_for_reservation(
                                         p_flight_id      => p_flight_id,
                                         p_reservation_id => r_unassigned.reservation_id,  -- child
