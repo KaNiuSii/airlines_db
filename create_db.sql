@@ -115,20 +115,6 @@ CREATE OR REPLACE TYPE PlaneSeatList AS TABLE OF REF PlaneSeat;
 CREATE OR REPLACE TYPE RoleList AS TABLE OF REF Role;
 /
 
-CREATE OR REPLACE TYPE RoleToCrew AS OBJECT (
-    Crew_member_id  INT,
-    Role_id         INT
-);
-/
-
-CREATE TABLE RoleToCrew_Table OF RoleToCrew;
-/
-
-ALTER TABLE RoleToCrew_Table 
-  ADD CONSTRAINT PK_RoleToCrew 
-  PRIMARY KEY (Crew_member_id, Role_id);
-/
-
 CREATE OR REPLACE TYPE Plane AS OBJECT (
     Id                   INT,
     Seat_list            PlaneSeatList,
